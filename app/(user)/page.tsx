@@ -221,14 +221,11 @@ export default function InfoPage() {
       {/* Advantages Slider */}
       <AdvantagesSlider />
  
-      {/* Testimonials */}
-      <Testimonials />
  
       {/* Security */}
       <SecuritySection />
  
       {/* CTA - top footer banner */}
-      <CtaBanner />
  
     </>
   );
