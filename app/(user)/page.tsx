@@ -23,7 +23,7 @@ export default function InfoPage() {
           </p>
           <div className="mt-6 flex items-center gap-4">
             <a
-              href="#"
+              href="/auth/login"
               className="rounded-2xl px-6 py-3 text-sm font-semibold text-white shadow-sm"
               style={{
                 background:
@@ -133,7 +133,7 @@ export default function InfoPage() {
             Với Chatbase, khách hàng của bạn có thể dễ dàng tìm thấy câu trả lời, giải quyết vấn đề và thực hiện các hành động có ý nghĩa thông qua các cuộc trò chuyện liền mạch và hấp dẫn do AI điều khiển.
           </p>
         </div>
-        {/* @ts-expect-error client component */}
+        {/* client component */}
         <StepsShowcase />
         </div>
       </section>
@@ -593,12 +593,12 @@ function SecuritySection() {
       </div>
 
       {/* Commitment bar */}
-      <div className="container mx-auto px-4 mt-10 flex items-center justify-between rounded-2xl border px-4 py-3">
+      <div className="container mx-auto px-4 mt-10 flex items-center justify-between rounded-2xl border py-3">
         <div className="flex items-center gap-2 text-sm">
           <Shield className="h-4 w-4" />
           <span>Chatbase is committed to safeguarding your data.</span>
         </div>
-        <a href="#" className="inline-flex items-center gap-1 text-sm font-medium">
+        <a href="/docs/user-guides" className="inline-flex items-center gap-1 text-sm font-medium">
           Learn more <ChevronRight className="h-4 w-4" />
         </a>
       </div>

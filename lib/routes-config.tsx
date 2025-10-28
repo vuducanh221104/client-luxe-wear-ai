@@ -31,8 +31,8 @@ export const page_routes: PageRoutesType[] = [
         href: "/",
         icon: "Fingerprint",
         items: [
-          { title: "Login", href: "/login" },
-          { title: "Register", href: "/register" }
+          { title: "Login", href: "/auth/login" },
+          { title: "Register", href: "/auth/register" }
         ]
       },
       {

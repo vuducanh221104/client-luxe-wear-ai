@@ -92,6 +92,41 @@ export async function getMe(): Promise<{
   return res.data;
 }
 
+export async function refreshToken(refreshToken: string): Promise<{ success: boolean; message: string; data?: { accessToken?: string } }> {
+  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
+    refreshToken,
+  });
+  // server returns { token } -> normalize to accessToken
+  const payload = res.data as { success: boolean; message: string; data?: any };
+  if (payload?.data && "token" in payload.data) {
+    return {
+      ...payload,
+      data: { accessToken: payload.data.token },
+    };
+  }
+  return payload as any;
+}
+
+export async function forgotPassword(email: string) {
+  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/forgot-password`, { email });
+  return res.data;
+}
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const token = getAccessToken();
+  const res = await axios.post(
+    `${API_BASE_URL}${API_PREFIX}/auth/change-password`,
+    { currentPassword, newPassword },
+    { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
+  );
+  return res.data;
+}
+
+export async function verifyTokenApi(token: string) {
+  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/verify-token`, { token });
+  return res.data;
+}
+
 export function saveTokens(accessToken?: string, refreshToken?: string) {
   if (typeof window === "undefined") return;
   if (accessToken) localStorage.setItem("access_token", accessToken);

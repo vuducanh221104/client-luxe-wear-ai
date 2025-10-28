@@ -1,14 +1,15 @@
 "use client";
+import { BotIcon, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const nav = [
-    { href: "/admin/dashboard", label: "Dashboard" },
-    { href: "/admin/users", label: "Users" },
-    { href: "/admin/agents", label: "Manage Agents" },
-    { href: "/admin/settings", label: "Settings" },
+    { href: "/admin/dashboard/user", label: "Management Users", icon: User },
+    { href: "/admin/dashboard/agent", label: "Management Agents", icon: BotIcon },
+    { href: "/admin/settings", label: "System Settings", icon: BotIcon },
+
   ];
 
   return (

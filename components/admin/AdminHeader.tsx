@@ -42,10 +42,10 @@ export default function AdminHeader() {
           </div>
           <div className="hidden sm:flex items-center gap-6 text-sm">
             <button className="inline-flex h-8 w-8 items-center justify-center rounded-lg border"><Grid className="h-4 w-4" /></button>
-            <Link href="#" className="font-semibold">Overview</Link>
-            <Link href="#" className="text-muted-foreground hover:text-foreground">Customers</Link>
-            <Link href="#" className="text-muted-foreground hover:text-foreground">Products</Link>
-            <Link href="#" className="text-muted-foreground hover:text-foreground">Settings</Link>
+            <Link href="/dashboard" className="font-semibold">Overview</Link>
+            <Link href="/dashboard/pages/users" className="text-muted-foreground hover:text-foreground">Customers</Link>
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Products</Link>
+            <Link href="/dashboard/pages/settings" className="text-muted-foreground hover:text-foreground">Settings</Link>
           </div>
         </div>
 
@@ -76,19 +76,19 @@ export default function AdminHeader() {
               </div>
               <div className="h-px bg-border" />
               <div className="p-2 text-sm">
-                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="#">
+                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="/dashboard/user">
                   <span>Profile</span>
                   <span className="text-muted-foreground">⇧⌘P</span>
                 </a>
-                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="#">
+                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="/dashboard/pages/settings">
                   <span>Billing</span>
                   <span className="text-muted-foreground">⌘B</span>
                 </a>
-                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="#">
+                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="/dashboard/pages/settings">
                   <span>Settings</span>
                   <span className="text-muted-foreground">⌘S</span>
                 </a>
-                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="#">
+                <a className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-muted" href="/dashboard">
                   <span>New Team</span>
                 </a>
                 <div className="h-px bg-border my-1" />

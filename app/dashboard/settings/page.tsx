@@ -1,88 +1,137 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+
 export default function SettingsPage() {
+  const [showKey, setShowKey] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [origins, setOrigins] = useState<string[]>([]);
+  const [originInput, setOriginInput] = useState("");
+
+  const [widgetTheme, setWidgetTheme] = useState<"light" | "dark">("light");
+  const [widgetPosition, setWidgetPosition] = useState<"bottom-right" | "bottom-left">("bottom-right");
+
+  const snippet = useMemo(() => {
+    const code = `
+<script>
+  (function(){
+    window.LuxeWearWidget = {
+      theme: "${widgetTheme}",
+      position: "${widgetPosition}",
+      apiKey: "${apiKey || "YOUR_API_KEY"}",
+    };
+    var s = document.createElement('script');
+    s.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/public/widget.js';
+    s.async = true; document.head.appendChild(s);
+  })();
+</script>`;
+    return code.trim();
+  }, [widgetTheme, widgetPosition, apiKey]);
+
+  const addOrigin = () => {
+    const v = originInput.trim();
+    if (!v) return;
+    try {
+      const url = new URL(v);
+      const normalized = `${url.protocol}//${url.host}`;
+      if (origins.includes(normalized)) return toast.info("Origin already added");
+      if (origins.length >= 10) return toast.error("Maximum 10 origins");
+      setOrigins((prev) => [...prev, normalized]);
+      setOriginInput("");
+    } catch {
+      toast.error("Invalid URL");
+    }
+  };
+
+  const removeOrigin = (o: string) => setOrigins((prev) => prev.filter((x) => x !== o));
+
+  const testCors = async (o: string) => {
+    toast.info(`Testing CORS for ${o}...`);
+  };
+
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">General</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Settings</h1>
 
-      {/* Agent details */}
-      <section className="rounded-2xl border bg-background p-6">
-        <div className="text-lg font-semibold">Agent details</div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Basic information about the agent, including its name, unique ID, and storage size.
-        </p>
+      <Tabs defaultValue="security">
+        <TabsList>
+          <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="embed">Embed Widget</TabsTrigger>
+        </TabsList>
 
-        <div className="mt-6 grid gap-4">
-          <div className="rounded-xl bg-muted/40 p-4">
-            <div className="text-sm text-muted-foreground">Agent ID</div>
-            <div className="mt-1 flex items-center gap-2 text-sm">
-              <span>xlx1i_kx-K9ZdfUyY9Vbk</span>
-              <button className="h-7 w-7 rounded-lg border">📋</button>
+        <TabsContent value="security" className="space-y-6">
+          <section className="rounded-2xl border p-6">
+            <div className="text-lg font-semibold mb-2">API Keys</div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setShowKey((v) => !v)}>{showKey ? "Hide" : "Show"} API Key</Button>
+              <Button onClick={() => { if (apiKey) { navigator.clipboard.writeText(apiKey); toast.success("Copied"); } }} disabled={!apiKey}>Copy</Button>
+              <Button variant="outline" onClick={() => { setApiKey("ak_" + Math.random().toString(16).slice(2).padEnd(32, "0")); toast.success("Generated (demo)"); }}>Regenerate</Button>
             </div>
-          </div>
+            {showKey && (
+              <div className="mt-3 rounded-md border p-3 text-sm break-all bg-muted">{apiKey || "ak_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"}</div>
+            )}
+          </section>
 
-          <div className="rounded-xl bg-muted/40 p-4">
-            <div className="text-sm text-muted-foreground">Size</div>
-            <div className="mt-1 text-sm">5 B</div>
-          </div>
+          <section className="rounded-2xl border p-6 space-y-3">
+            <div className="text-lg font-semibold">Allowed Origins</div>
+            <div className="flex gap-2">
+              <Input placeholder="https://example.com" value={originInput} onChange={(e) => setOriginInput(e.target.value)} />
+              <Button variant="outline" onClick={addOrigin}>Add</Button>
+              <Button onClick={() => toast.success("Saved (demo)")}>Save</Button>
+            </div>
+            <div className="space-y-2">
+              {origins.length === 0 && <div className="text-xs text-muted-foreground">No origins configured</div>}
+              {origins.map((o) => (
+                <div key={o} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                  <span>{o}</span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => testCors(o)}>Test CORS</Button>
+                    <Button variant="ghost" size="sm" onClick={() => removeOrigin(o)}>Remove</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </TabsContent>
 
-          <div>
-            <label className="text-sm font-medium">Name</label>
-            <input defaultValue="Agent" className="mt-2 w-full rounded-lg border px-3 py-2" />
-          </div>
-
-          <div className="flex justify-end">
-            <button className="rounded-lg bg-foreground px-4 py-2 text-background text-sm font-semibold">Save</button>
-          </div>
-        </div>
-      </section>
-
-      {/* Credits limit */}
-      <section className="rounded-2xl border bg-background p-6">
-        <div className="text-lg font-semibold">Credits limit</div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Maximum credits to be used by this agent from the credits available on the workspace.
-        </p>
-
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm">Set credits limit on agent:</span>
-            <input type="checkbox" className="h-4 w-4" />
-          </div>
-          <input placeholder="Enter credit limit" className="w-full rounded-lg border px-3 py-2" />
-          <div className="flex justify-end">
-            <button className="rounded-lg bg-foreground px-4 py-2 text-background text-sm font-semibold">Save</button>
-          </div>
-        </div>
-      </section>
-
-      {/* Danger zone label */}
-      <div className="relative">
-        <div className="absolute left-0 right-0 top-0 flex items-center justify-center text-[11px] uppercase tracking-widest text-red-600">
-          Danger Zone
-        </div>
-      </div>
-
-      {/* Delete all conversations */}
-      <section className="rounded-2xl border bg-background p-6">
-        <div className="text-lg font-semibold">Delete all conversations</div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Once you delete all your conversations, there is no going back. Please be certain. All the conversations on
-          this agent will be deleted.
-        </p>
-        <div className="mt-4 flex justify-end">
-          <button className="rounded-lg bg-red-600 px-4 py-2 text-white text-sm font-semibold">Delete</button>
-        </div>
-      </section>
-
-      {/* Delete agent */}
-      <section className="rounded-2xl border border-red-200 bg-red-50 p-6">
-        <div className="text-lg font-semibold">Delete agent</div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Once you delete your agent, there is not going back. Please be certain.
-        </p>
-        <div className="mt-4 flex justify-end">
-          <button className="rounded-lg bg-red-600 px-4 py-2 text-white text-sm font-semibold">Delete</button>
-        </div>
-      </section>
+        <TabsContent value="embed" className="space-y-6">
+          <section className="rounded-2xl border p-6 space-y-4">
+            <div className="text-lg font-semibold">Preview</div>
+            <div className="rounded-lg border bg-muted/30 p-6 h-64 flex items-center justify-center text-sm text-muted-foreground">
+              Widget preview ({widgetTheme}, {widgetPosition})
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Theme</Label>
+                <div className="flex gap-2">
+                  <Button variant={widgetTheme === "light" ? "default" : "outline"} onClick={() => setWidgetTheme("light")}>Light</Button>
+                  <Button variant={widgetTheme === "dark" ? "default" : "outline"} onClick={() => setWidgetTheme("dark")}>Dark</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Position</Label>
+                <div className="flex gap-2">
+                  <Button variant={widgetPosition === "bottom-right" ? "default" : "outline"} onClick={() => setWidgetPosition("bottom-right")}>Bottom-right</Button>
+                  <Button variant={widgetPosition === "bottom-left" ? "default" : "outline"} onClick={() => setWidgetPosition("bottom-left")}>Bottom-left</Button>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Code snippet</Label>
+              <Textarea rows={8} value={snippet} readOnly />
+              <div className="flex justify-end">
+                <Button onClick={() => { navigator.clipboard.writeText(snippet); toast.success("Copied"); }}>Copy snippet</Button>
+              </div>
+            </div>
+          </section>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

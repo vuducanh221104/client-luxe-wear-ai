@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.scss";
 import StoreProvider from "@/components/StoreProvider";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,7 +13,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <StoreProvider>{children}</StoreProvider>
+        <StoreProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton />
+        </StoreProvider>
       </body>
     </html>
   );

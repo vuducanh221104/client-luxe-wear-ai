@@ -36,20 +36,20 @@ export default function Footer() {
           <div>
             <div className="text-sm font-semibold tracking-wide text-zinc-300">PRODUCT</div>
             <ul className="mt-3 space-y-3 text-sm text-zinc-400">
-              <li><Link href="#" className="hover:text-white">Customer Service</Link></li>
-              <li><Link href="#" className="hover:text-white">Pricing</Link></li>
-              <li><Link href="#" className="hover:text-white">Security</Link></li>
+              <li><Link href="/dashboard" className="hover:text-white">Dashboard</Link></li>
+              <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+              <li><Link href="/docs/user-guides" className="hover:text-white">Security</Link></li>
               <li><Link href="#" className="hover:text-white">Affiliates</Link></li>
             </ul>
           </div>
           <div>
             <div className="text-sm font-semibold tracking-wide text-zinc-300">RESOURCES</div>
             <ul className="mt-3 space-y-3 text-sm text-zinc-400">
-              <li><Link href="#" className="hover:text-white">Contact us</Link></li>
-              <li><Link href="#" className="hover:text-white">API</Link></li>
-              <li><Link href="#" className="hover:text-white">Guide</Link></li>
-              <li><Link href="#" className="hover:text-white">Blog</Link></li>
-              <li><Link href="#" className="hover:text-white">Changelog</Link></li>
+              <li><Link href="/auth/login" className="hover:text-white">Login</Link></li>
+              <li><Link href="/docs/user-guides" className="hover:text-white">Docs</Link></li>
+              <li><Link href="/docs/your-first-agent" className="hover:text-white">Guide</Link></li>
+              <li><Link href="/dashboard/pages/users" className="hover:text-white">Users</Link></li>
+              <li><Link href="/dashboard/pages/settings" className="hover:text-white">Settings</Link></li>
             </ul>
           </div>
           <div>
@@ -66,7 +66,7 @@ export default function Footer() {
           </div>
         </div>
         <section className="mx-auto flex w-full max-w-(--breakpoint-xl) px-6 xl:-mt-14 lg:-mt-10 md:-mt-4 sm:-mt-10 overflow-hidden pb-1 md:pb-3 lg:pb-0" data-sentry-element="ContentWrapper" data-sentry-source-file="ContentWrapper.tsx" data-sentry-component="ContentWrapper">
-          <Image src="/images/footer/luxewear.png" alt="Watermark" width={2000} height={2000} />
+          <Image src="/images/footer/iconGobal.png" alt="Watermark" width={2000} height={2000} />
         </section>
       </div>
     </footer>

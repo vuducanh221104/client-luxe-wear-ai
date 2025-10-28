@@ -17,7 +17,7 @@ type AvatarProps = {
 export default function UserAvatar({ image, indicator, fallback = "AB", className }: AvatarProps) {
   return (
     <Avatar className={cn("h-12 w-12 border", className)}>
-      <AvatarImage src={image} alt="avatar image" />
+      <AvatarImage src={image || "/images/avatar-default.jpg"} alt="avatar image" />
       <AvatarIndicator variant={indicator} />
       <AvatarFallback>{generateAvatarFallback(fallback)}</AvatarFallback>
     </Avatar>

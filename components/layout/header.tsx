@@ -93,8 +93,8 @@ export default function Header() {
 
         {/* Right: Login + Dashboard */}
         <div className="flex items-center gap-6">
-          <Link href="#" className="text-base font-semibold hover:text-foreground/80">Login</Link>
-          <Link href="#" className="text-base font-semibold hover:text-foreground/80">Dashboard</Link>
+          <Link href="/auth/login" className="text-base font-semibold hover:text-foreground/80">Login</Link>
+          <Link href="/dashboard" className="text-base font-semibold hover:text-foreground/80">Dashboard</Link>
         </div>
       </div>
     </header>

@@ -3,15 +3,17 @@ import { useDispatch, useSelector, TypedUseSelectorHook } from "react-redux";
 import storage from "redux-persist/lib/storage";
 import { persistStore, persistReducer } from "redux-persist";
 import authReducer from "./authSlice";
+import tenantReducer from "./tenantSlice";
 
 const rootPersistConfig = {
   key: "root",
   storage,
-  whitelist: ["auth"]
+  whitelist: ["auth", "tenant"]
 };
 
 const rootReducer = combineReducers({
-  auth: authReducer
+  auth: authReducer,
+  tenant: tenantReducer
 });
 
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer);
