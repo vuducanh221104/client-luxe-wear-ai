@@ -6,7 +6,7 @@ export default function DocsLeftSidebar() {
           <div className="text-xs font-semibold text-muted-foreground mb-2">Quick Start</div>
           <nav className="space-y-1">
             <a className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm font-medium" href="/docs/user-guides">
-              <span className="text-zinc-400">✦</span> Welcome to Chatbase
+              <span className="text-zinc-400">✦</span> Welcome to LuxeWear
             </a>
             <a className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted" href="/docs/your-first-agent">
               <span className="text-zinc-400">🔑</span> Build Your First AI Agent

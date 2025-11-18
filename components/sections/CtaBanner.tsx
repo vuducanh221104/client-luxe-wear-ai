@@ -16,7 +16,7 @@ export default function CtaBanner() {
             competitive edge
           </h2>
           <p className="mt-6 text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-            Use Chatbase to deliver exceptional support experiences that set you apart from the competition.
+            Use LuxeWear to deliver exceptional support experiences that set you apart from the competition.
           </p>
           <div className="mt-10 inline-flex flex-col items-center gap-3">
             <button className="relative inline-flex items-center justify-center rounded-full bg-black px-8 py-4 text-white text-lg font-medium shadow-sm">

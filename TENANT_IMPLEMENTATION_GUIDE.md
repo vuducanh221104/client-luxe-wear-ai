@@ -604,3 +604,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 - **Backend Routes:** `server-luxe-wear-ai/src/routes/tenant.router.ts`
 - **Backend Controller:** `server-luxe-wear-ai/src/controllers/tenant.controller.ts`
 
+

@@ -19,7 +19,7 @@ export default function InfoPage() {
             cho khách hàng
           </h1>
           <p className="mt-6 text-lg text-muted-foreground max-w-2xl">
-            Chatbase là nền tảng hoàn chỉnh để xây dựng và triển khai các tác nhân hỗ trợ AI cho doanh nghiệp của bạn.
+            LuxeWear là nền tảng hoàn chỉnh để xây dựng và triển khai các tác nhân hỗ trợ AI cho doanh nghiệp của bạn.
           </p>
           <div className="mt-6 flex items-center gap-4">
             <a
@@ -72,7 +72,7 @@ export default function InfoPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight">Nền tảng hoàn chỉnh cho các tác nhân hỗ trợ AI</h2>
           <p className="text-lg text-muted-foreground">
-            Chatbase được thiết kế để xây dựng các tác nhân hỗ trợ AI có khả năng giải quyết những vấn đề khó khăn nhất của khách hàng đồng thời cải thiện kết quả kinh doanh.
+            LuxeWear được thiết kế để xây dựng các tác nhân hỗ trợ AI có khả năng giải quyết những vấn đề khó khăn nhất của khách hàng đồng thời cải thiện kết quả kinh doanh.
           </p>
         </div>
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,7 +130,7 @@ export default function InfoPage() {
             Giải pháp toàn diện cho AI đàm thoại
           </h3>
           <p className="text-lg text-muted-foreground">
-            Với Chatbase, khách hàng của bạn có thể dễ dàng tìm thấy câu trả lời, giải quyết vấn đề và thực hiện các hành động có ý nghĩa thông qua các cuộc trò chuyện liền mạch và hấp dẫn do AI điều khiển.
+            Với LuxeWear, khách hàng của bạn có thể dễ dàng tìm thấy câu trả lời, giải quyết vấn đề và thực hiện các hành động có ý nghĩa thông qua các cuộc trò chuyện liền mạch và hấp dẫn do AI điều khiển.
           </p>
         </div>
         {/* client component */}
@@ -149,7 +149,7 @@ export default function InfoPage() {
             Xây dựng một tác nhân AI hoàn hảo hướng tới khách hàng
           </h3>
           <p className="text-lg text-muted-foreground">
-            Chatbase cung cấp cho bạn mọi công cụ cần thiết để đào tạo tác nhân AI hoàn hảo và kết nối với hệ thống của bạn.
+            LuxeWear cung cấp cho bạn mọi công cụ cần thiết để đào tạo tác nhân AI hoàn hảo và kết nối với hệ thống của bạn.
           </p>
         </div>
 
@@ -550,7 +550,7 @@ function SecuritySection() {
             security & privacy
           </h2>
           <p className="mt-5 text-muted-foreground text-base md:text-lg max-w-2xl">
-            We take security and compliance seriously. Chatbase is SOC 2 Type II and
+            We take security and compliance seriously. LuxeWear is SOC 2 Type II and
             GDPR compliant, trusted by thousands of businesses to build secure and
             compliant AI Agents.
           </p>
@@ -596,7 +596,7 @@ function SecuritySection() {
       <div className="container mx-auto px-4 mt-10 flex items-center justify-between rounded-2xl border py-3">
         <div className="flex items-center gap-2 text-sm">
           <Shield className="h-4 w-4" />
-          <span>Chatbase is committed to safeguarding your data.</span>
+          <span>LuxeWear is committed to safeguarding your data.</span>
         </div>
         <a href="/docs/user-guides" className="inline-flex items-center gap-1 text-sm font-medium">
           Learn more <ChevronRight className="h-4 w-4" />

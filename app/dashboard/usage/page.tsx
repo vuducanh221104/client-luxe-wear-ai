@@ -68,25 +68,50 @@ export default function UsagePage() {
       }
 
       // Get summary from user analytics
-      const userAnalytics = await getUserAnalytics();
-      setCreditsUsed(userAnalytics.creditsUsed || 0);
-      setAgentsUsed(userAnalytics.agentsUsed || 0);
+      const userAnalyticsRes = await getUserAnalytics(params);
+      const userAnalytics = userAnalyticsRes?.data || userAnalyticsRes;
+      
+      // Map backend response to frontend state
+      // Backend returns: totalQueries, uniqueAgents
+      setCreditsUsed(userAnalytics?.totalQueries || 0);
+      
+      // Get number of agents created (from agents list)
+      const agentsRes = await listAgents({ page: 1, pageSize: 100 });
+      const rawAgents = agentsRes?.data ?? agentsRes;
+      const agentsList = Array.isArray(rawAgents?.agents)
+        ? rawAgents.agents
+        : Array.isArray(rawAgents?.data?.agents)
+        ? rawAgents.data.agents
+        : Array.isArray(rawAgents)
+        ? rawAgents
+        : [];
+      setAgentsUsed(agentsList.length || 0);
 
       // Get tenant analytics for charts
-      const tenantAnalytics = await getTenantAnalytics(params);
+      const tenantAnalyticsRes = await getTenantAnalytics(params);
+      const tenantAnalytics = tenantAnalyticsRes?.data || tenantAnalyticsRes;
 
-      // Usage history (line chart)
-      const usageData = (tenantAnalytics.usageOverTime || []).map((d: any) => ({
-        date: d.date,
-        credits: d.credits || 0,
-      }));
+      // Transform dailyStats (Record<string, number>) to usageOverTime array
+      // Backend returns: dailyStats: { "2024-01-01": 5, "2024-01-02": 10, ... }
+      const dailyStats = tenantAnalytics?.dailyStats || {};
+      const usageData = Object.entries(dailyStats)
+        .map(([date, count]) => ({
+          date,
+          credits: count as number,
+        }))
+        .sort((a, b) => (a.date < b.date ? -1 : 1)); // Sort by date ascending
       setUsageHistory(usageData);
 
-      // Credits per agent (bar chart)
-      const agentData = (tenantAnalytics.creditsPerAgent || []).map((d: any) => ({
-        agent: d.agentName || d.agentId || "Unknown",
-        credits: d.credits || 0,
-      }));
+      // Transform topAgents to creditsPerAgent with agent names
+      // Backend returns: topAgents: [{ agentId: "xxx", count: 5 }, ...]
+      const topAgents = tenantAnalytics?.topAgents || [];
+      const agentData = topAgents.map((item: any) => {
+        const agent = agentsList.find((a: any) => a.id === item.agentId);
+        return {
+          agent: agent?.name || item.agentId || "Unknown",
+          credits: item.count || 0,
+        };
+      });
       setCreditsPerAgent(agentData);
 
     } catch (error: any) {
@@ -104,7 +129,19 @@ export default function UsagePage() {
   // Export CSV
   const handleExport = async () => {
     try {
-      const blob = await exportAnalytics();
+      // Build export params
+      let params: any = { format: 'csv' };
+      if (timeRange === "custom" && dateRange.from && dateRange.to) {
+        params.startDate = format(dateRange.from, "yyyy-MM-dd");
+        params.endDate = format(dateRange.to, "yyyy-MM-dd");
+      } else if (timeRange !== "custom") {
+        params.period = timeRange;
+      }
+      if (selectedAgent && selectedAgent !== "all") {
+        params.agentId = selectedAgent;
+      }
+
+      const blob = await exportAnalytics(params);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

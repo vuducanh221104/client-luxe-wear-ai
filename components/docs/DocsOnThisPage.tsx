@@ -4,7 +4,7 @@ type Props = {
 
 export default function DocsOnThisPage({ items = [] }: Props) {
   const defaultItems = [
-    { id: "why-choose", label: "Why Choose Chatbase?" },
+    { id: "why-choose", label: "Why Choose LuxeWear?" },
   ];
   const list = items.length ? items : defaultItems;
   return (

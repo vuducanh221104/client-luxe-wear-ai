@@ -11,10 +11,9 @@ import { useAppDispatch } from "@/store";
 import { setCredentials } from "@/store/authSlice";
 import { useForm } from "react-hook-form";
 
+type RegisterForm = { name: string; email: string; password: string; confirmPassword: string };
 
-type RegisterForm = { name: string; email: string; password: string };
-
-export default function LoginPageV1() {
+export default function RegisterPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [apiError, setApiError] = useState<string | null>(null);
@@ -25,17 +24,29 @@ export default function LoginPageV1() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm<RegisterForm>({ mode: "onBlur" });
+    watch,
+  } = useForm<RegisterForm>({
+    mode: "onBlur",
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
 
-  const onSubmit = handleSubmit(async ({ name, email, password }) => {
+  const password = watch("password");
+
+  const onSubmit = handleSubmit(async (data: RegisterForm) => {
     setApiError(null);
     setInfo(null);
+    const { name, email, password } = data;
     try {
-      const res = await apiRegister(email, password, name);
+      const res = await apiRegister(email.trim(), password, name.trim());
       if (!res.success) throw new Error(res.message || "Register failed");
 
       if (res.data?.requiresEmailConfirmation) {
-        setInfo("Please check your email to confirm your account.");
+        setInfo("Vui lòng kiểm tra email để xác nhận tài khoản.");
         setTimeout(() => router.push("/auth/login"), 1500);
       } else if (res.data?.user) {
         saveTokens(res.data?.accessToken, res.data?.refreshToken);
@@ -61,10 +72,10 @@ export default function LoginPageV1() {
       if (Array.isArray(apiErrors)) {
         apiErrors.forEach((e) => {
           const field = (e.param as keyof RegisterForm) || "email";
-          setError(field, { message: e.msg });
+          setError(field, { type: "server", message: e.msg });
         });
       } else {
-        setApiError(err?.response?.data?.message || err?.message || "Register failed");
+        setApiError(err?.response?.data?.message || err?.message || "Đăng ký thất bại");
       }
     }
   });
@@ -86,22 +97,28 @@ export default function LoginPageV1() {
 
           <form className="mt-8 space-y-6" onSubmit={onSubmit}>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="sr-only">
+              <div className="space-y-1">
+                <Label htmlFor="name" className={errors.name ? "text-red-600" : ""}>
                   Name
                 </Label>
                 <Input
                   id="name"
                   name="name"
                   type="text"
-                  {...register("name", { required: "Vui lòng nhập tên" })}
-                  className="w-full"
+                  {...register("name", {
+                    required: "Vui lòng nhập tên",
+                    minLength: { value: 2, message: "Tên tối thiểu 2 ký tự" },
+                    maxLength: { value: 100, message: "Tên tối đa 100 ký tự" },
+                  })}
+                  className={`w-full ${errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder="Name"
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+                {errors.name && (
+                  <p className="mt-1 text-sm font-medium text-red-600">{errors.name.message}</p>
+                )}
               </div>
-              <div>
-                <Label htmlFor="email" className="sr-only">
+              <div className="space-y-1">
+                <Label htmlFor="email" className={errors.email ? "text-red-600" : ""}>
                   Email address
                 </Label>
                 <Input
@@ -116,38 +133,72 @@ export default function LoginPageV1() {
                       message: "Email không hợp lệ",
                     },
                   })}
-                  className="w-full"
+                  className={`w-full ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder="Email address"
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm font-medium text-red-600">{errors.email.message}</p>
+                )}
               </div>
-              <div>
-                <Label htmlFor="password" className="sr-only">
+              <div className="space-y-1">
+                <Label htmlFor="password" className={errors.password ? "text-red-600" : ""}>
                   Password
                 </Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   {...register("password", {
                     required: "Vui lòng nhập mật khẩu",
                     minLength: { value: 6, message: "Mật khẩu tối thiểu 6 ký tự" },
+                    maxLength: { value: 128, message: "Mật khẩu tối đa 128 ký tự" },
                   })}
-                  className="w-full"
+                  className={`w-full ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder="Password"
                 />
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+                  <p className="mt-1 text-sm font-medium text-red-600">{errors.password.message}</p>
                 )}
               </div>
-              {apiError && <p className="text-sm text-red-600">{apiError}</p>}
-              {info && <p className="text-sm text-green-600">{info}</p>}
+              <div className="space-y-1">
+                <Label htmlFor="confirmPassword" className={errors.confirmPassword ? "text-red-600" : ""}>
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  {...register("confirmPassword", {
+                    required: "Vui lòng xác nhận mật khẩu",
+                    validate: (value) =>
+                      value === password || "Mật khẩu xác nhận không khớp",
+                  })}
+                  className={`w-full ${errors.confirmPassword ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  placeholder="Confirm Password"
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm font-medium text-red-600">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+              {apiError && (
+                <div className="rounded-md bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm font-medium text-red-800">{apiError}</p>
+                </div>
+              )}
+              {info && (
+                <div className="rounded-md bg-green-50 border border-green-200 p-3">
+                  <p className="text-sm font-medium text-green-800">{info}</p>
+                </div>
+              )}
             </div>
 
             <div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Sign in"}
+                {isSubmitting ? "Đang tạo tài khoản..." : "Đăng ký"}
               </Button>
             </div>
           </form>

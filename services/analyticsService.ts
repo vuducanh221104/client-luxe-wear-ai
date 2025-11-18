@@ -16,7 +16,10 @@ export async function getAgentAnalytics(agentId: string) {
 }
 
 export async function exportAnalytics(params?: { format?: 'json' | 'csv'; startDate?: string; endDate?: string; agentId?: string }) {
-  const res = await api.get(`/analytics/export`, { params });
+  const res = await api.get(`/analytics/export`, { 
+    params,
+    responseType: params?.format === 'csv' ? 'blob' : 'json'
+  });
   return res.data;
 }
 

@@ -536,3 +536,4 @@ DELETE /api/tenants/:id/members/:userId
 - **Embed Chatbox**: `server-luxe-wear-ai/EMBED_CHATBOX_GUIDE.md`
 - **Tenant Implementation**: `client-luxe-wear-ai/TENANT_IMPLEMENTATION_GUIDE.md`
 
+

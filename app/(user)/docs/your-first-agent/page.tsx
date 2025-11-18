@@ -40,7 +40,7 @@ export default function YourFirstAgentPage() {
               <div className="my-4 px-5 py-4 overflow-hidden rounded-2xl flex gap-3 border bg-zinc-50/50 dark:bg-zinc-500/10">
                 <div className="mt-0.5 w-4 text-zinc-400">i</div>
                 <div className="text-sm">
-                  You’ll need an active Chatbase account to follow this guide. <a className="underline" href="https://www.chatbase.co/auth/signup" target="_blank" rel="noreferrer">Sign up here</a> if you haven’t already.
+                  You’ll need an active LuxeWear account to follow this guide. <a className="underline" href="https://www.LuxeWear.co/auth/signup" target="_blank" rel="noreferrer">Sign up here</a> if you haven’t already.
                 </div>
               </div>
 
@@ -70,9 +70,9 @@ export default function YourFirstAgentPage() {
 
               <h2 id="step-1">Step 1: Create &amp; Train Your AI Agent</h2>
               <h3 id="dashboard">Navigate to Your Dashboard</h3>
-              <p>After signing into your Chatbase account, go to your main dashboard. Click the <strong>“New AI Agent”</strong> button to get started.</p>
+              <p>After signing into your LuxeWear account, go to your main dashboard. Click the <strong>“New AI Agent”</strong> button to get started.</p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/create-agent.png?fit=max&auto=format&q=85" alt="Chatbase dashboard with New AI Agent button highlighted" />
+                <img src="https://mintcdn.com/LuxeWear/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/create-agent.png?fit=max&auto=format&q=85" alt="LuxeWear dashboard with New AI Agent button highlighted" />
               </div>
 
               <h3 id="training">Choose Your Training Data</h3>
@@ -89,13 +89,13 @@ export default function YourFirstAgentPage() {
               <p><strong>Upload your documents</strong></p>
               <p>Train your agent on your documents. <strong>Best for:</strong> Business documents, manuals, FAQs, product information, etc.</p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/uploading-files.png?fit=max&auto=format&q=85" alt="Sources tab with Files option selected and a file being uploaded" />
+                <img src="https://mintcdn.com/LuxeWear/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/uploading-files.png?fit=max&auto=format&q=85" alt="Sources tab with Files option selected and a file being uploaded" />
               </div>
 
               <h3 id="review-train">Review &amp; Start Training</h3>
               <p>Click <strong>“Create Agent”</strong> to begin the training process.</p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/sources-create-agent.png?fit=max&auto=format&q=85" alt="Sources tab with Create Agent button highlighted" />
+                <img src="https://mintcdn.com/LuxeWear/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/sources-create-agent.png?fit=max&auto=format&q=85" alt="Sources tab with Create Agent button highlighted" />
               </div>
 
               <div className="my-4 px-5 py-4 overflow-hidden rounded-2xl flex gap-3 border bg-emerald-50/50 dark:bg-emerald-500/10">
@@ -113,7 +113,7 @@ export default function YourFirstAgentPage() {
                 Once training begins, you’ll automatically be taken to the <a className="underline" href="/docs/user-guides/chatbot/playground"><strong>Playground</strong></a> - your testing environment where you can chat with your AI Agent and fine-tune it before making it live.
               </p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/Zkg12EbnhYTJTGwv/user-guides/quick-start/images/first-agent/getting-started-9.png?fit=max&auto=format&q=85" alt="Playground interface showing chat testing area" />
+                <img src="https://mintcdn.com/LuxeWear/Zkg12EbnhYTJTGwv/user-guides/quick-start/images/first-agent/getting-started-9.png?fit=max&auto=format&q=85" alt="Playground interface showing chat testing area" />
               </div>
 
               <h3 id="models">Test responses with different models</h3>
@@ -122,7 +122,7 @@ export default function YourFirstAgentPage() {
                   <div className="font-semibold">Test with different models</div>
                   <div>Ask the same questions to different models and compare quality, speed, tone, and edge cases handling.</div>
                   <div className="mt-3 rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                    <img src="https://mintcdn.com/chatbase/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/playground-select-models.png?fit=max&auto=format&q=85" alt="Playground interface showing select models button" />
+                    <img src="https://mintcdn.com/LuxeWear/4kdBs__Z0wOL088A/user-guides/quick-start/images/first-agent/playground-select-models.png?fit=max&auto=format&q=85" alt="Playground interface showing select models button" />
                   </div>
                 </li>
                 <li>
@@ -141,7 +141,7 @@ export default function YourFirstAgentPage() {
                 Once you’re satisfied with your AI Agent’s responses, navigate to the <strong>Deploy</strong> tab and click <strong>Update</strong> to make it public.
               </p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/change-visibility.png?fit=max&auto=format&q=85" alt="Deploy tab with Make Public button highlighted" />
+                <img src="https://mintcdn.com/LuxeWear/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/change-visibility.png?fit=max&auto=format&q=85" alt="Deploy tab with Make Public button highlighted" />
               </div>
               <div className="my-4 px-5 py-4 overflow-hidden rounded-2xl flex gap-3 border bg-zinc-50/50 dark:bg-zinc-500/10">
                 <div className="mt-0.5 w-4 text-zinc-400">i</div>
@@ -151,7 +151,7 @@ export default function YourFirstAgentPage() {
               <h3 id="embed">Get Your Embed Code</h3>
               <p>In this guide we’ll use the <strong>Chat widget</strong> option. Copy the provided JavaScript code snippet and add it to your site.</p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/copy-embed-code.png?fit=max&auto=format&q=85" alt="JavaScript embed code ready to copy" />
+                <img src="https://mintcdn.com/LuxeWear/JnjROJ-aB2q57UGe/user-guides/quick-start/images/first-agent/copy-embed-code.png?fit=max&auto=format&q=85" alt="JavaScript embed code ready to copy" />
               </div>
 
               <h3 id="add-code">Add Code to Your Website</h3>
@@ -173,7 +173,7 @@ export default function YourFirstAgentPage() {
               <h3 id="verify">Verify Installation</h3>
               <p>Visit your website and look for the chat bubble. Click it to test the integration!</p>
               <div className="rounded-2xl overflow-hidden border bg-muted/40 p-2">
-                <img src="https://mintcdn.com/chatbase/Zkg12EbnhYTJTGwv/user-guides/quick-start/images/first-agent/getting-started-15.png?fit=max&auto=format&q=85" alt="Live AI Agent chat bubble on a website" />
+                <img src="https://mintcdn.com/LuxeWear/Zkg12EbnhYTJTGwv/user-guides/quick-start/images/first-agent/getting-started-15.png?fit=max&auto=format&q=85" alt="Live AI Agent chat bubble on a website" />
               </div>
               <div className="my-4 px-5 py-4 overflow-hidden rounded-2xl flex gap-3 border bg-emerald-50/50 dark:bg-emerald-500/10">
                 <div className="mt-0.5 w-4 text-emerald-600">✔</div>

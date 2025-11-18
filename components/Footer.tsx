@@ -14,9 +14,9 @@ export default function Footer() {
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white text-black font-bold">C</span>
-              <span className="text-lg font-semibold">Chatbase</span>
+              <span className="text-lg font-semibold">LuxeWear</span>
             </div>
-            <div className="text-sm text-zinc-400">© 2025 Chatbase, Inc.</div>
+            <div className="text-sm text-zinc-400">© 2025 LuxeWear, Inc.</div>
 
             <div className="flex items-center gap-3">
               <Link href="#" className="rounded-xl bg-white text-black px-4 py-2 text-sm font-medium">Contact</Link>

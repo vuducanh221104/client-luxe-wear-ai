@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { getAgent, updateAgent, deleteAgent, regenerateApiKey, togglePublic } from "@/services/agentService";
 import { getAgentAnalytics } from "@/services/analyticsService";
+import EmbedChatWidget from "@/components/dashboard/EmbedChatWidget";
 
 export default function AgentDetailsPage() {
   const params = useParams();
@@ -59,6 +60,10 @@ export default function AgentDetailsPage() {
         setInstructions(cfg.instructions || "");
         setIsPublic(Boolean(data.isPublic ?? data.is_public));
         setAllowedOrigins((data.allowedOrigins ?? data.allowed_origins) || []);
+        // Set API key if available (only shown once after regeneration)
+        if (data.apiKey) {
+          setApiKey(data.apiKey);
+        }
       } catch (e: any) {
         toast.error(e?.response?.data?.message || e?.message || "Failed to load agent");
         router.push("/dashboard");
@@ -117,6 +122,11 @@ export default function AgentDetailsPage() {
       if (res.success) {
         setIsPublic(checked);
         toast.success("Public status updated");
+        // Reload agent data to get updated values
+        const reloadRes = await getAgent(agentId);
+        const reloadData = reloadRes.data || reloadRes;
+        setAllowedOrigins((reloadData.allowedOrigins ?? reloadData.allowed_origins) || []);
+        setIsPublic(Boolean(reloadData.isPublic ?? reloadData.is_public));
       } else {
         toast.error(res.message || "Failed to update public status");
       }
@@ -125,33 +135,118 @@ export default function AgentDetailsPage() {
     }
   };
 
-  const addOrigin = () => {
-    const v = newOrigin.trim();
-    if (!v) return;
-    try {
-      const url = new URL(v);
-      const normalized = `${url.protocol}//${url.host}`;
-      if (allowedOrigins.includes(normalized)) return;
-      if (allowedOrigins.length >= 10) {
-        toast.error("Maximum 10 origins");
-        return;
+  const normalizeOrigin = (input: string): string => {
+    const v = input.trim();
+    if (!v) return "";
+    
+    // If already has protocol, parse as URL
+    if (v.startsWith("http://") || v.startsWith("https://")) {
+      try {
+        const url = new URL(v);
+        return `${url.protocol}//${url.host}`;
+      } catch {
+        return v; // Return as-is if parsing fails
       }
-      setAllowedOrigins((prev) => [...prev, normalized]);
-      setNewOrigin("");
+    }
+    
+    // If no protocol, assume http:// and add it
+    // This handles cases like "localhost:3001" or "example.com:8080"
+    try {
+      const url = new URL(`http://${v}`);
+      return `http://${url.host}`; // This preserves port (e.g., localhost:3001)
     } catch {
-      toast.error("Invalid URL");
+      // If parsing fails, just prepend http://
+      return `http://${v}`;
     }
   };
 
-  const removeOrigin = (origin: string) => {
-    setAllowedOrigins((prev) => prev.filter((o) => o !== origin));
+  const addOrigin = () => {
+    const v = newOrigin.trim();
+    if (!v) return;
+    
+    const normalized = normalizeOrigin(v);
+    
+    if (allowedOrigins.includes(normalized)) {
+      toast.info("Origin already added");
+      setNewOrigin("");
+      return;
+    }
+    if (allowedOrigins.length >= 10) {
+      toast.error("Maximum 10 origins");
+      return;
+    }
+    setAllowedOrigins((prev) => [...prev, normalized]);
+    setNewOrigin("");
+    toast.success("Origin added");
+  };
+
+  const removeOrigin = async (origin: string) => {
+    // Save current state for potential revert
+    const previousOrigins = [...allowedOrigins];
+    const updatedOrigins = allowedOrigins.filter((o) => o !== origin);
+    
+    // Optimistic update
+    setAllowedOrigins(updatedOrigins);
+    
+    // Auto-save after remove
+    try {
+      const res = await updateAgent(agentId, { allowed_origins: updatedOrigins, is_public: isPublic });
+      if (res.success || res.data) {
+        toast.success("Origin removed and saved");
+        // Reload agent data to get updated allowed_origins from database
+        const reloadRes = await getAgent(agentId);
+        const reloadData = reloadRes.data || reloadRes;
+        setAllowedOrigins((reloadData.allowedOrigins ?? reloadData.allowed_origins) || []);
+        setIsPublic(Boolean(reloadData.isPublic ?? reloadData.is_public));
+      } else {
+        toast.error(res.message || "Failed to remove origin");
+        // Revert on error
+        setAllowedOrigins(previousOrigins);
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || "Failed to remove origin");
+      // Revert on error
+      setAllowedOrigins(previousOrigins);
+    }
   };
 
   const saveOrigins = async () => {
     try {
-      const res = await updateAgent(agentId, { allowed_origins: allowedOrigins, is_public: isPublic });
-      if (res.success) toast.success("Origins saved");
-      else toast.error(res.message || "Failed to save origins");
+      // Auto-add origin from input if exists and not empty
+      let finalOrigins = [...allowedOrigins];
+      if (newOrigin.trim()) {
+        const normalized = normalizeOrigin(newOrigin);
+        if (normalized && !finalOrigins.includes(normalized)) {
+          if (finalOrigins.length >= 10) {
+            toast.error("Maximum 10 origins. Please remove one before adding.");
+            return;
+          }
+          finalOrigins.push(normalized);
+          setAllowedOrigins(finalOrigins);
+          setNewOrigin("");
+          toast.success("Origin auto-added");
+        } else if (normalized && finalOrigins.includes(normalized)) {
+          // Origin already in list, just clear input
+          setNewOrigin("");
+        }
+      }
+
+      if (finalOrigins.length === 0) {
+        toast.error("Please add at least one origin");
+        return;
+      }
+
+      const res = await updateAgent(agentId, { allowed_origins: finalOrigins, is_public: isPublic });
+      if (res.success || res.data) {
+        toast.success("Origins saved");
+        // Reload agent data to get updated allowed_origins from database
+        const reloadRes = await getAgent(agentId);
+        const reloadData = reloadRes.data || reloadRes;
+        setAllowedOrigins((reloadData.allowedOrigins ?? reloadData.allowed_origins) || []);
+        setIsPublic(Boolean(reloadData.isPublic ?? reloadData.is_public));
+      } else {
+        toast.error(res.message || "Failed to save origins");
+      }
     } catch (e: any) {
       toast.error(e?.response?.data?.message || e?.message || "Failed to save origins");
     }
@@ -264,20 +359,28 @@ export default function AgentDetailsPage() {
             {isPublic && (
               <div className="space-y-3">
                 <div className="flex gap-2">
-                  <Input placeholder="https://example.com" value={newOrigin} onChange={(e) => setNewOrigin(e.target.value)} />
-                  <Button variant="outline" onClick={addOrigin}>Add</Button>
-                  <Button onClick={saveOrigins}>Save</Button>
+                  <Input placeholder="https://example.com or localhost:3001" value={newOrigin} onChange={(e) => setNewOrigin(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addOrigin(); }} />
+                  <Button variant="outline" onClick={addOrigin} disabled={!newOrigin.trim()}>Add</Button>
+                  <Button onClick={saveOrigins} disabled={!newOrigin.trim() && allowedOrigins.length === 0}>
+                    Save
+                  </Button>
                 </div>
                 <div className="space-y-2">
-                  {allowedOrigins.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No origins configured</p>
-                  )}
-                  {allowedOrigins.map((o) => (
-                    <div key={o} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
-                      <span>{o}</span>
-                      <Button variant="ghost" size="sm" onClick={() => removeOrigin(o)}>Remove</Button>
+                  <div className="text-xs font-medium text-muted-foreground">
+                    Allowed Origins ({allowedOrigins.length}/10)
+                  </div>
+                  {allowedOrigins.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No origins configured. Add at least one origin to enable public access.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {allowedOrigins.map((o) => (
+                        <div key={o} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm bg-muted/50">
+                          <span className="font-mono text-xs">{o}</span>
+                          <Button variant="ghost" size="sm" onClick={() => { removeOrigin(o); }}>Remove</Button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
                 <div className="rounded-md border p-3 text-xs">
                   <div className="font-medium mb-1">Embed snippet</div>
@@ -310,7 +413,7 @@ async function chatWithAgent(message){
             <div className="text-xs text-muted-foreground">Use this iframe to embed the chat widget into any website. Ensure this agent is public and allowed origins are configured.</div>
             <div className="rounded-lg overflow-hidden border">
               <iframe
-                src={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/public/widget/${agentId}`}
+                src={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}`}
                 title="Agent Chat Widget"
                 className="w-full h-[520px]"
                 allow="microphone"
@@ -320,7 +423,7 @@ async function chatWithAgent(message){
               <div className="text-xs font-medium">Embed code</div>
               <pre className="rounded-md border p-3 text-xs whitespace-pre-wrap break-words">{`<div style="position:relative;width:380px;height:600px;border-radius:12px;overflow:hidden;">
   <iframe
-    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/public/widget/${agentId}?apiKey=YOUR_API_KEY"
+    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}?apiKey=YOUR_API_KEY"
     style="width:100%;height:100%;border:none;"
     allow="microphone"
     title="AI Chat Assistant"
@@ -362,12 +465,17 @@ async function chatWithAgent(message){
       {currentTab === "chat" && (
         <div className="space-y-4">
           <div className="rounded-2xl border p-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-sm font-medium">Chat with this agent</div>
-                <div className="text-xs text-muted-foreground">Open the full chat experience</div>
+                <div className="text-xs text-muted-foreground">Test your agent directly here or open full chat experience</div>
               </div>
-              <Button onClick={() => router.push(`/dashboard/chat?agentId=${agentId}`)}>Open Chat</Button>
+              <Button variant="outline" onClick={() => router.push(`/dashboard/chat?agentId=${agentId}`)}>
+                Open Full Chat
+              </Button>
+            </div>
+            <div className="h-[600px]">
+              <EmbedChatWidget agentId={agentId} agentName={name || "Agent"} />
             </div>
           </div>
         </div>
@@ -405,3 +513,4 @@ async function chatWithAgent(message){
     </div>
   );
 }
+

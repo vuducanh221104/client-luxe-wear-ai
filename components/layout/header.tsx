@@ -60,21 +60,21 @@ export default function Header() {
                       <div className="h-12 w-12 rounded-xl border inline-flex items-center justify-center"><BookOpen className="h-5 w-5" /></div>
                       <div>
                         <div className="text-lg font-semibold">Guide</div>
-                        <p className="text-sm text-muted-foreground">Find out everything on how to use chatbase, and unlock its full potential.</p>
+                        <p className="text-sm text-muted-foreground">Find out everything on how to use LuxeWear, and unlock its full potential.</p>
                       </div>
                     </Link>
                     <Link href="#" className="flex items-start gap-4 p-2 rounded-xl hover:bg-muted" onClick={() => setOpen(false)}>
                       <div className="h-12 w-12 rounded-xl border inline-flex items-center justify-center"><BookMarked className="h-5 w-5" /></div>
                       <div>
                         <div className="text-lg font-semibold">Blog</div>
-                        <p className="text-sm text-muted-foreground">Learn more about chatbase by reading our latest articles.</p>
+                        <p className="text-sm text-muted-foreground">Learn more about LuxeWear by reading our latest articles.</p>
                       </div>
                     </Link>
                     <Link href="/docs/user-guides" className="flex items-start gap-4 p-2 rounded-xl hover:bg-muted" onClick={() => setOpen(false)}>
                       <div className="h-12 w-12 rounded-xl border inline-flex items-center justify-center"><FileCode className="h-5 w-5" /></div>
                       <div>
                         <div className="text-lg font-semibold">Docs</div>
-                        <p className="text-sm text-muted-foreground">Explore our API and learn how to integrate chatbase with your app.</p>
+                        <p className="text-sm text-muted-foreground">Explore our API and learn how to integrate LuxeWear with your app.</p>
                       </div>
                     </Link>
                     <Link href="#" className="flex items-start gap-4 p-2 rounded-xl hover:bg-muted" onClick={() => setOpen(false)}>

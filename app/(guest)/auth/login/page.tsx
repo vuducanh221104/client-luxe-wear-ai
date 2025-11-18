@@ -12,9 +12,7 @@ import { useAppDispatch } from "@/store";
 import { setCredentials } from "@/store/authSlice";
 import { useForm } from "react-hook-form";
 
-
-
-type LoginForm = { email: string; password: string };
+  type LoginForm = { email: string; password: string };
 
 export default function LoginPageV1() {
   const router = useRouter();
@@ -26,12 +24,19 @@ export default function LoginPageV1() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm<LoginForm>({ mode: "onBlur" });
+  } = useForm<LoginForm>({
+    mode: "onBlur",
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
-  const onSubmit = handleSubmit(async ({ email, password }) => {
+  const onSubmit = handleSubmit(async (data: LoginForm) => {
     setApiError(null);
+    const { email, password } = data;
     try {
-      const res = await apiLogin(email, password);
+      const res = await apiLogin(email.trim(), password);
       if (!res.success || !res.data?.user) throw new Error(res.message || "Login failed");
       saveTokens(res.data?.accessToken, res.data?.refreshToken);
       dispatch(
@@ -55,10 +60,10 @@ export default function LoginPageV1() {
       if (Array.isArray(apiErrors)) {
         apiErrors.forEach((e) => {
           const field = (e.param as keyof LoginForm) || "email";
-          setError(field, { message: e.msg });
+          setError(field, { type: "server", message: e.msg });
         });
       } else {
-        setApiError(err?.response?.data?.message || err?.message || "Login failed");
+        setApiError(err?.response?.data?.message || err?.message || "Đăng nhập thất bại");
       }
     }
   });
@@ -78,8 +83,8 @@ export default function LoginPageV1() {
 
           <form className="mt-8 space-y-6" onSubmit={onSubmit}>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="email" className="sr-only">
+              <div className="space-y-1">
+                <Label htmlFor="email" className={errors.email ? "text-red-600" : ""}>
                   Email address
                 </Label>
                 <Input
@@ -94,13 +99,15 @@ export default function LoginPageV1() {
                       message: "Email không hợp lệ",
                     },
                   })}
-                  className="w-full"
+                  className={`w-full ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder="Email address"
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm font-medium text-red-600">{errors.email.message}</p>
+                )}
               </div>
-              <div>
-                <Label htmlFor="password" className="sr-only">
+              <div className="space-y-1">
+                <Label htmlFor="password" className={errors.password ? "text-red-600" : ""}>
                   Password
                 </Label>
                 <Input
@@ -112,14 +119,18 @@ export default function LoginPageV1() {
                     required: "Vui lòng nhập mật khẩu",
                     minLength: { value: 6, message: "Mật khẩu tối thiểu 6 ký tự" },
                   })}
-                  className="w-full"
+                  className={`w-full ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                   placeholder="Password"
                 />
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+                  <p className="mt-1 text-sm font-medium text-red-600">{errors.password.message}</p>
                 )}
               </div>
-              {apiError && <p className="text-sm text-red-600">{apiError}</p>}
+              {apiError && (
+                <div className="rounded-md bg-red-50 border border-red-200 p-3">
+                  <p className="text-sm font-medium text-red-800">{apiError}</p>
+                </div>
+              )}
               <div className="text-end">
                 <Link href="#" className="ml-auto inline-block text-sm underline">
                   Forgot your password?

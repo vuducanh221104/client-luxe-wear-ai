@@ -12,7 +12,7 @@ export default function Testimonials() {
           {/* Big quote - flexible */}
           <div className="rounded-3xl border p-6 flex-1 min-w-[320px]">
             <p className="text-lg leading-relaxed">
-              "Chatbase is a strong signal of how customer support will evolve. It is an early adopter of the agentic approach, which will become increasingly effective, trusted, and prominent."
+              "LuxeWear is a strong signal of how customer support will evolve. It is an early adopter of the agentic approach, which will become increasingly effective, trusted, and prominent."
             </p>
             <div className="mt-8 flex items-center gap-3">
               <img src="/images/testimonials/marc-manara.webp" className="h-10 w-10 rounded-full" alt="Marc Manara" />
@@ -40,7 +40,7 @@ export default function Testimonials() {
             <img src="/images/testimonials/abstract-1.webp" className="w-full h-48 object-cover" alt="abstract" />
             <div className="p-6">
               <div className="text-4xl font-extrabold">9000+</div>
-              <div className="text-sm text-muted-foreground">businesses trust Chatbase</div>
+              <div className="text-sm text-muted-foreground">businesses trust LuxeWear</div>
             </div>
           </div>
 
@@ -68,7 +68,7 @@ export default function Testimonials() {
           {/* Long quote - flexible */}
           <div className="rounded-3xl border p-6 flex-1 min-w-[320px]">
             <p className="text-lg leading-relaxed">
-              "Our chatbot has been great. Answers questions it knows, delegates to our talent when its stuck, knows how to push clients to the funnel. Chatbase is what we use, 10/10 recommend."
+              "Our chatbot has been great. Answers questions it knows, delegates to our talent when its stuck, knows how to push clients to the funnel. LuxeWear is what we use, 10/10 recommend."
             </p>
             <div className="mt-8 flex items-center gap-3">
               <img src="/images/testimonials/martin-terskin.webp" className="h-10 w-10 rounded-full" alt="Martin Terskin" />
