@@ -69,3 +69,24 @@ export const updateMemberRole = async (
 export const removeTenantMember = async (tenantId: string, userId: string): Promise<void> => {
   return http.delete(`/tenants/${tenantId}/members/${userId}`);
 };
+
+// Admin APIs
+export const adminListAllTenants = async (params?: { page?: number; perPage?: number; plan?: string; status?: string; q?: string }): Promise<any> => {
+  return http.get('/tenants/admin/all', { params });
+};
+
+export const adminGetTenantStats = async (): Promise<any> => {
+  return http.get('/tenants/admin/stats');
+};
+
+export const adminSuspendTenant = async (tenantId: string): Promise<any> => {
+  return http.put(`/tenants/admin/${tenantId}/suspend`);
+};
+
+export const adminActivateTenant = async (tenantId: string): Promise<any> => {
+  return http.put(`/tenants/admin/${tenantId}/activate`);
+};
+
+export const adminDeleteTenant = async (tenantId: string): Promise<void> => {
+  return http.delete(`/tenants/admin/${tenantId}`);
+};

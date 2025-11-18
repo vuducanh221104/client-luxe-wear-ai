@@ -83,7 +83,6 @@ export default function DashboardLayout({
           <nav className="flex items-center gap-5 text-sm font-medium">
             <TenantSwitcher />
             <Link href="/docs/user-guides" className="hover:text-foreground/80">Docs</Link>
-            <Link href="/docs/user-guides" className="hover:text-foreground/80">Docs</Link>
             <Link href="/dashboard/pages/settings" className="hover:text-foreground/80">Settings</Link>
             <div className="relative" ref={menuRef}>
               <button

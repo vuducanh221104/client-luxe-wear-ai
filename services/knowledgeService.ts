@@ -53,4 +53,19 @@ export async function getUploadProgress(sessionId: string) {
   return res.data;
 }
 
+// Admin APIs
+export async function adminListAllKnowledge(params: { page?: number; perPage?: number; agentId?: string; userId?: string; tenantId?: string }) {
+  const res = await api.get(`/knowledge/admin/all`, { params });
+  return res.data;
+}
+
+export async function adminGetKnowledgeStats() {
+  const res = await api.get(`/knowledge/admin/stats`);
+  return res.data;
+}
+
+export async function adminForceDeleteKnowledge(id: string) {
+  const res = await api.delete(`/knowledge/admin/${id}`);
+  return res.data;
+}
 
