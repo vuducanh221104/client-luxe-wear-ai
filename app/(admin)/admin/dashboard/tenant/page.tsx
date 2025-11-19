@@ -58,16 +58,43 @@ export default function AdminTenantsPage() {
         adminGetTenantStats().catch(() => null),
       ]);
 
+      // Parse tenants response
       const body = (tenantsRes as any)?.data || tenantsRes;
-      const payload = body?.data || body;
-      const tenants = payload?.tenants || Array.isArray(payload) ? payload : [];
-      const pagination = payload?.pagination || body?.pagination || { total: tenants.length };
+      let tenants: any[] = [];
+      let paginationTotal = 0;
+
+      // Try different response structures
+      if (Array.isArray(body)) {
+        tenants = body;
+        paginationTotal = body.length;
+      } else if (body?.data) {
+        if (Array.isArray(body.data)) {
+          tenants = body.data;
+        } else if (body.data?.tenants) {
+          tenants = Array.isArray(body.data.tenants) ? body.data.tenants : [];
+        }
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || body.data?.pagination?.total || tenants.length;
+      } else if (body?.tenants) {
+        tenants = Array.isArray(body.tenants) ? body.tenants : [];
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || tenants.length;
+      }
+
+      setData(tenants);
+      setTotal(paginationTotal);
       
-      setData(Array.isArray(tenants) ? tenants : []);
-      setTotal(pagination.total || pagination.totalCount || tenants.length);
-      setStats((statsRes as any)?.data || statsRes);
+      // Parse stats response
+      const statsBody = (statsRes as any)?.data || statsRes;
+      setStats(statsBody);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load tenants');
+      console.error('Failed to load tenants:', e);
+      // If API fails, try to show empty state gracefully
+      if (e?.response?.status === 404 || e?.response?.status === 500) {
+        setData([]);
+        setTotal(0);
+        // Don't show error toast for 404/500, just show empty state
+      } else {
+        toast.error(e?.response?.data?.message || 'Failed to load tenants');
+      }
     } finally {
       setLoading(false);
     }

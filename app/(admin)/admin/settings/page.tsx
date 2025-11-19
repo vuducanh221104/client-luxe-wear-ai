@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/card';
 import { Table, Tabs, Statistic, Row, Col, Tag, List } from 'antd';
 import { getSystemAnalytics, getApiHealth } from '@/services/analyticsService';
 import { adminListAllAgents } from '@/services/agentService';
+import { adminListUsers } from '@/services/userService';
+import { adminListAllTenants } from '@/services/tenantService';
 import { toast } from 'sonner';
 
 export default function AdminSystemSettingsPage() {
@@ -16,14 +18,51 @@ export default function AdminSystemSettingsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const [sys, hlth] = await Promise.all([
-        getSystemAnalytics(),
-        getApiHealth(),
+      const [sys, hlth, usersRes, agentsRes, tenantsRes] = await Promise.all([
+        getSystemAnalytics().catch(() => null),
+        getApiHealth().catch(() => null),
+        adminListUsers({ page: 1, perPage: 100 }).catch(() => ({ data: { users: [], pagination: { totalCount: 0 } } })),
+        adminListAllAgents({ page: 1, perPage: 100 }).catch(() => ({ data: { agents: [], pagination: { total: 0 } } })),
+        adminListAllTenants({ page: 1, perPage: 100 }).catch(() => ({ data: { tenants: [], pagination: { total: 0 } } })),
       ]);
+
       const sysData = (sys as any)?.data || sys;
       const hlthData = (hlth as any)?.data || hlth;
-      setStats(sysData);
+      
+      // Extract data from responses
+      const users = (usersRes as any)?.data?.users || (usersRes as any)?.users || [];
+      const usersPagination = (usersRes as any)?.data?.pagination || (usersRes as any)?.pagination || {};
+      const totalUsers = usersPagination.totalCount || users.length;
+
+      const agents = (agentsRes as any)?.data?.agents || (agentsRes as any)?.agents || [];
+      const agentsPagination = (agentsRes as any)?.data?.pagination || (agentsRes as any)?.pagination || {};
+      const totalAgents = agentsPagination.total || agents.length;
+      const publicAgents = agents.filter((a: any) => a.isPublic === true || a.is_public === true).length;
+
+      const tenants = (tenantsRes as any)?.data?.tenants || (tenantsRes as any)?.tenants || [];
+      const tenantsPagination = (tenantsRes as any)?.data?.pagination || (tenantsRes as any)?.pagination || {};
+      const totalTenants = tenantsPagination.total || tenantsPagination.totalCount || tenants.length;
+
+      // Calculate active users in last 24h
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const activeUsers = users.filter((u: any) => {
+        const lastLogin = u.last_login ? new Date(u.last_login) : null;
+        return lastLogin && lastLogin > yesterday;
+      }).length;
+
+      // Combine stats from API and calculated values
+      const combinedStats = {
+        totalAgents: totalAgents,
+        publicAgents: publicAgents,
+        totalTenants: totalTenants,
+        activeUsers: activeUsers,
+        ...sysData, // Include any other fields from analytics API
+      };
+
+      setStats(combinedStats);
       setHealth(hlthData);
+      
       // Placeholder audit logs (backend endpoint not provided). Show last 10 agents as sample log entries
       try {
         const all = await adminListAllAgents({ page: 1, perPage: 10 });
@@ -37,6 +76,7 @@ export default function AdminSystemSettingsPage() {
         })));
       } catch {}
     } catch (e: any) {
+      console.error('Failed to load system data:', e);
       toast.error(e?.response?.data?.message || 'Failed to load system data');
     } finally {
       setLoading(false);

@@ -55,19 +55,40 @@ export default function AdminContentModerationPage() {
         getModerationStats().catch(() => null),
       ]);
       
+      // Parse queue response
       const body = (queueRes as any)?.data || queueRes;
-      const payload = body?.data || body;
-      const queueList = payload?.queue || Array.isArray(payload) ? payload : [];
-      const pagination = payload?.pagination || body?.pagination || { total: queueList.length };
+      let queueList: any[] = [];
+      let paginationTotal = 0;
+
+      // Try different response structures
+      if (Array.isArray(body)) {
+        queueList = body;
+        paginationTotal = body.length;
+      } else if (body?.data) {
+        if (Array.isArray(body.data)) {
+          queueList = body.data;
+        } else if (body.data?.queue) {
+          queueList = Array.isArray(body.data.queue) ? body.data.queue : [];
+        }
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || body.data?.pagination?.total || queueList.length;
+      } else if (body?.queue) {
+        queueList = Array.isArray(body.queue) ? body.queue : [];
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || queueList.length;
+      }
+
+      setQueue(queueList);
+      setTotal(paginationTotal);
       
-      setQueue(Array.isArray(queueList) ? queueList : []);
-      setTotal(pagination.total || pagination.totalCount || queueList.length);
-      setModerationStats((statsRes as any)?.data || statsRes);
+      // Parse stats response
+      const statsBody = (statsRes as any)?.data || statsRes;
+      setModerationStats(statsBody);
     } catch (e: any) {
-      // Fallback to empty array if API not available
-      if (e?.response?.status === 404) {
+      console.error('Failed to load moderation queue:', e);
+      // If API fails, try to show empty state gracefully
+      if (e?.response?.status === 404 || e?.response?.status === 500) {
         setQueue([]);
         setTotal(0);
+        // Don't show error toast for 404/500, just show empty state
       } else {
         toast.error(e?.response?.data?.message || 'Failed to load moderation queue');
       }
@@ -354,7 +375,7 @@ export default function AdminContentModerationPage() {
           pagination={{ 
             current: page, 
             pageSize: perPage, 
-            total: filteredQueue.length, 
+            total: total, 
             showSizeChanger: false, 
             onChange: (p) => setPage(p) 
           }}

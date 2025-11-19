@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, Tag, Space } from 'antd';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { adminListAllKnowledge, adminGetKnowledgeStats, adminForceDeleteKnowledge, getKnowledge } from '@/services/knowledgeService';
+import { adminListAllKnowledge, adminGetKnowledgeStats, adminForceDeleteKnowledge, adminGetKnowledge } from '@/services/knowledgeService';
 import { toast } from 'sonner';
 import { 
   Eye, 
@@ -42,16 +42,48 @@ export default function AdminKnowledgePage() {
         adminGetKnowledgeStats().catch(() => null),
       ]);
 
+      // Parse knowledge response
       const body = (knowledgeRes as any)?.data || knowledgeRes;
-      const payload = body?.data || body;
-      const knowledge = payload?.knowledge || payload?.entries || Array.isArray(payload) ? payload : [];
-      const pagination = payload?.pagination || body?.pagination || { total: knowledge.length };
+      let knowledge: any[] = [];
+      let paginationTotal = 0;
+
+      // Try different response structures
+      if (Array.isArray(body)) {
+        knowledge = body;
+        paginationTotal = body.length;
+      } else if (body?.data) {
+        if (Array.isArray(body.data)) {
+          knowledge = body.data;
+        } else if (body.data?.knowledge) {
+          knowledge = Array.isArray(body.data.knowledge) ? body.data.knowledge : [];
+        } else if (body.data?.entries) {
+          knowledge = Array.isArray(body.data.entries) ? body.data.entries : [];
+        }
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || body.data?.pagination?.total || knowledge.length;
+      } else if (body?.knowledge) {
+        knowledge = Array.isArray(body.knowledge) ? body.knowledge : [];
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || knowledge.length;
+      } else if (body?.entries) {
+        knowledge = Array.isArray(body.entries) ? body.entries : [];
+        paginationTotal = body.pagination?.total || body.pagination?.totalCount || knowledge.length;
+      }
+
+      setData(knowledge);
+      setTotal(paginationTotal);
       
-      setData(Array.isArray(knowledge) ? knowledge : []);
-      setTotal(pagination.total || pagination.totalCount || knowledge.length);
-      setStats((statsRes as any)?.data || statsRes);
+      // Parse stats response
+      const statsBody = (statsRes as any)?.data || statsRes;
+      setStats(statsBody);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load knowledge');
+      console.error('Failed to load knowledge:', e);
+      // If API fails, try to show empty state gracefully
+      if (e?.response?.status === 404 || e?.response?.status === 500) {
+        setData([]);
+        setTotal(0);
+        // Don't show error toast for 404/500, just show empty state
+      } else {
+        toast.error(e?.response?.data?.message || 'Failed to load knowledge');
+      }
     } finally {
       setLoading(false);
     }
@@ -62,12 +94,21 @@ export default function AdminKnowledgePage() {
   const handleViewKnowledge = async (item: any) => {
     setSelectedKnowledge(item);
     setViewOpen(true);
+    // Try to fetch detailed info using admin API, but if it fails, use the data we already have
     try {
-      const detail = await getKnowledge(item.id);
+      const detail = await adminGetKnowledge(item.id);
       const detailData = (detail as any)?.data || detail;
       setSelectedKnowledge({ ...item, ...detailData });
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load knowledge details');
+      // If admin API doesn't exist (404) or fails, just use the item data we already have
+      if (e?.response?.status === 404) {
+        // API endpoint doesn't exist, use available data
+        console.warn('Admin knowledge detail API not available, using list data');
+      } else {
+        // Other error, still use available data but log it
+        console.warn('Could not fetch detailed knowledge info:', e?.response?.data?.message || e?.message);
+      }
+      // Keep using the item data we already have (setSelectedKnowledge was already called above)
     }
   };
 
@@ -280,7 +321,7 @@ export default function AdminKnowledgePage() {
           pagination={{ 
             current: page, 
             pageSize: perPage, 
-            total: filtered.length, 
+            total: total, 
             showSizeChanger: false, 
             onChange: (p) => setPage(p) 
           }}

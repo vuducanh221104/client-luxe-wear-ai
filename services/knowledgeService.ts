@@ -64,6 +64,11 @@ export async function adminGetKnowledgeStats() {
   return res.data;
 }
 
+export async function adminGetKnowledge(id: string) {
+  const res = await api.get(`/knowledge/admin/${id}`);
+  return res.data;
+}
+
 export async function adminForceDeleteKnowledge(id: string) {
   const res = await api.delete(`/knowledge/admin/${id}`);
   return res.data;
