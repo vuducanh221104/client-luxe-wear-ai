@@ -205,7 +205,7 @@ export default function AdminErrorMonitoringPage() {
         const Icon = getErrorIcon(record.type);
         return (
           <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-red-600" />
+            <Icon className="h-4 w-4 text-red-600 dark:text-red-400" />
             <Tag color={getErrorColor(record.statusCode)}>{record.type}</Tag>
           </div>
         );
@@ -332,16 +332,16 @@ export default function AdminErrorMonitoringPage() {
               <p className="text-sm font-medium text-muted-foreground">Total Errors</p>
               <p className="text-2xl font-bold mt-1">{loading ? '...' : stats.total}</p>
             </div>
-            <AlertTriangle className="h-8 w-8 text-red-600 opacity-50" />
+            <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Unresolved</p>
-              <p className="text-2xl font-bold mt-1 text-red-600">{loading ? '...' : stats.unresolved}</p>
+              <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">{loading ? '...' : stats.unresolved}</p>
             </div>
-            <XCircle className="h-8 w-8 text-red-600 opacity-50" />
+            <XCircle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">
@@ -350,7 +350,7 @@ export default function AdminErrorMonitoringPage() {
               <p className="text-sm font-medium text-muted-foreground">5xx Errors</p>
               <p className="text-2xl font-bold mt-1">{loading ? '...' : stats.byStatusCode?.[500] || 0}</p>
             </div>
-            <AlertCircle className="h-8 w-8 text-red-600 opacity-50" />
+            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">
@@ -359,7 +359,7 @@ export default function AdminErrorMonitoringPage() {
               <p className="text-sm font-medium text-muted-foreground">4xx Errors</p>
               <p className="text-2xl font-bold mt-1">{loading ? '...' : stats.byStatusCode?.[400] || 0}</p>
             </div>
-            <AlertTriangle className="h-8 w-8 text-orange-600 opacity-50" />
+            <AlertTriangle className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
           </div>
         </Card>
       </div>

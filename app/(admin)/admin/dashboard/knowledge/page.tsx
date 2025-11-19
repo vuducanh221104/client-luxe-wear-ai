@@ -193,7 +193,7 @@ export default function AdminKnowledgePage() {
                 <p className="text-2xl font-bold mt-1">{stats.totalEntries || 0}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-                <Database className="h-5 w-5 text-blue-600" />
+                <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
             </div>
           </Card>
@@ -204,7 +204,7 @@ export default function AdminKnowledgePage() {
                 <p className="text-2xl font-bold mt-1">{stats.byAgent || 0}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-green-600" />
+                <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
             </div>
           </Card>
@@ -215,7 +215,7 @@ export default function AdminKnowledgePage() {
                 <p className="text-2xl font-bold mt-1">{stats.byUser || 0}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-purple-600" />
+                <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
           </Card>
@@ -228,7 +228,7 @@ export default function AdminKnowledgePage() {
                 </p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
-                <Database className="h-5 w-5 text-orange-600" />
+                <Database className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </Card>

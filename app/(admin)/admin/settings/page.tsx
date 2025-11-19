@@ -67,11 +67,20 @@ export default function AdminSystemSettingsPage() {
               key: 'health',
               label: 'System health',
               children: (
-                <div className="space-y-3">
-                  <div>Status: {health?.success ? <Tag color="green">ok</Tag> : <Tag color="red">down</Tag>}</div>
-                  <div>Message: {health?.message || '-'}</div>
-                  <div>Timestamp: {health?.timestamp || new Date().toISOString()}</div>
-                  <div>Uptime: {health?.uptime ? `${Math.floor(health.uptime)}s` : '-'}</div>
+                <div className="space-y-3 text-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Status:</span>
+                    {health?.success ? <Tag color="green">ok</Tag> : <Tag color="red">down</Tag>}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Message:</span> <span className="text-foreground">{health?.message || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Timestamp:</span> <span className="text-foreground">{health?.timestamp || new Date().toISOString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Uptime:</span> <span className="text-foreground">{health?.uptime ? `${Math.floor(health.uptime)}s` : '-'}</span>
+                  </div>
                 </div>
               ),
             },
@@ -79,11 +88,11 @@ export default function AdminSystemSettingsPage() {
               key: 'rate',
               label: 'Rate limits',
               children: (
-                <div className="space-y-2 text-sm">
-                  <div>Public chat limiter: enabled</div>
-                  <div>Auth routes limiter: enabled</div>
-                  <div>Strict AI chat limiter: enabled</div>
-                  <div className="text-muted-foreground">(Hiển thị demo dựa trên middleware hiện có)</div>
+                <div className="space-y-2 text-sm text-foreground">
+                  <div><span className="text-muted-foreground">Public chat limiter:</span> <span className="text-green-600 dark:text-green-400">enabled</span></div>
+                  <div><span className="text-muted-foreground">Auth routes limiter:</span> <span className="text-green-600 dark:text-green-400">enabled</span></div>
+                  <div><span className="text-muted-foreground">Strict AI chat limiter:</span> <span className="text-green-600 dark:text-green-400">enabled</span></div>
+                  <div className="text-muted-foreground text-xs">(Hiển thị demo dựa trên middleware hiện có)</div>
                 </div>
               ),
             },
@@ -91,11 +100,11 @@ export default function AdminSystemSettingsPage() {
               key: 'flags',
               label: 'Feature flags',
               children: (
-                <div className="space-y-2 text-sm">
-                  <div>RAG indexing v2: <Tag color="blue">on</Tag></div>
-                  <div>Experimental SSE: <Tag>off</Tag></div>
-                  <div>Multi-tenant beta: <Tag color="blue">on</Tag></div>
-                  <div className="text-muted-foreground">(Placeholder cho flags - cần backend nếu muốn bật/tắt)</div>
+                <div className="space-y-2 text-sm text-foreground">
+                  <div><span className="text-muted-foreground">RAG indexing v2:</span> <Tag color="blue">on</Tag></div>
+                  <div><span className="text-muted-foreground">Experimental SSE:</span> <Tag>off</Tag></div>
+                  <div><span className="text-muted-foreground">Multi-tenant beta:</span> <Tag color="blue">on</Tag></div>
+                  <div className="text-muted-foreground text-xs">(Placeholder cho flags - cần backend nếu muốn bật/tắt)</div>
                 </div>
               ),
             },

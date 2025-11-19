@@ -100,7 +100,14 @@ export default function AdminHeader() {
           {/* Left: Brand + nav */}
           <div className="flex items-center gap-6">
             <Link href="/admin/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Image src="/logoGobal.png" alt="LuxeWear" width={32} height={32} className="h-8 w-auto" unoptimized />
+              <Image 
+                src="/logoGobal.png" 
+                alt="LuxeWear" 
+                width={32} 
+                height={32} 
+                className="h-8 w-auto dark:brightness-0 dark:invert" 
+                unoptimized 
+              />
               <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-medium text-foreground">LuxeWear</span>
                 <span>/</span>

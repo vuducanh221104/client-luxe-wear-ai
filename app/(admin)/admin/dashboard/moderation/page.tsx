@@ -263,27 +263,27 @@ export default function AdminContentModerationPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Pending Review</p>
-              <p className="text-2xl font-bold mt-1 text-orange-600">{loading ? '...' : stats.pending}</p>
+              <p className="text-2xl font-bold mt-1 text-orange-600 dark:text-orange-400">{loading ? '...' : stats.pending}</p>
             </div>
-            <AlertTriangle className="h-8 w-8 text-orange-600 opacity-50" />
+            <AlertTriangle className="h-8 w-8 text-orange-600 dark:text-orange-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Approved</p>
-              <p className="text-2xl font-bold mt-1 text-green-600">{loading ? '...' : stats.approved}</p>
+              <p className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">{loading ? '...' : stats.approved}</p>
             </div>
-            <CheckCircle className="h-8 w-8 text-green-600 opacity-50" />
+            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Rejected</p>
-              <p className="text-2xl font-bold mt-1 text-red-600">{loading ? '...' : stats.rejected}</p>
+              <p className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">{loading ? '...' : stats.rejected}</p>
             </div>
-            <XCircle className="h-8 w-8 text-red-600 opacity-50" />
+            <XCircle className="h-8 w-8 text-red-600 dark:text-red-400 opacity-50" />
           </div>
         </Card>
         <Card className="p-4">

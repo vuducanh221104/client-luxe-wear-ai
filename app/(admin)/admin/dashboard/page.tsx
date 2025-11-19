@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
       title: 'Total Users',
       value: stats?.totalUsers || 0,
       icon: Users,
-      color: 'text-blue-600',
+      color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-500/10',
       link: '/admin/dashboard/user',
     },
@@ -126,7 +126,7 @@ export default function AdminDashboardPage() {
       title: 'Total Agents',
       value: stats?.totalAgents || 0,
       icon: Bot,
-      color: 'text-purple-600',
+      color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-500/10',
       link: '/admin/dashboard/agent',
     },
@@ -134,7 +134,7 @@ export default function AdminDashboardPage() {
       title: 'Knowledge Entries',
       value: stats?.totalKnowledge || 0,
       icon: Database,
-      color: 'text-green-600',
+      color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-500/10',
       link: '/admin/dashboard/knowledge',
     },
@@ -142,7 +142,7 @@ export default function AdminDashboardPage() {
       title: 'Total Tenants',
       value: stats?.totalTenants || 0,
       icon: Building2,
-      color: 'text-orange-600',
+      color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-500/10',
       link: '/admin/dashboard/tenant',
     },
@@ -209,7 +209,7 @@ export default function AdminDashboardPage() {
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-              <Activity className="h-5 w-5 text-blue-600" />
+              <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total API Calls</p>
@@ -221,7 +221,7 @@ export default function AdminDashboardPage() {
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
+              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Error Rate</p>
@@ -254,9 +254,9 @@ export default function AdminDashboardPage() {
                     item.type === 'user' ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-purple-100 dark:bg-purple-500/20'
                   }`}>
                     {item.type === 'user' ? (
-                      <Users className="h-4 w-4 text-blue-600" />
+                      <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                     ) : (
-                      <Bot className="h-4 w-4 text-purple-600" />
+                      <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     )}
                   </div>
                   <div>

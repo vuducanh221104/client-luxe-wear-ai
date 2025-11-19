@@ -265,7 +265,7 @@ export default function AdminAnalyticsPage() {
       value: stats?.totalUsers || 0,
       change: stats?.usersGrowth || 0,
       icon: Users,
-      color: 'text-blue-600',
+      color: 'text-blue-600 dark:text-blue-400',
       bgColor: 'bg-blue-50 dark:bg-blue-500/10',
     },
     {
@@ -273,7 +273,7 @@ export default function AdminAnalyticsPage() {
       value: stats?.totalAgents || 0,
       change: stats?.agentsGrowth || 0,
       icon: Bot,
-      color: 'text-purple-600',
+      color: 'text-purple-600 dark:text-purple-400',
       bgColor: 'bg-purple-50 dark:bg-purple-500/10',
     },
     {
@@ -281,7 +281,7 @@ export default function AdminAnalyticsPage() {
       value: stats?.totalKnowledge || 0,
       change: stats?.knowledgeGrowth || 0,
       icon: Database,
-      color: 'text-green-600',
+      color: 'text-green-600 dark:text-green-400',
       bgColor: 'bg-green-50 dark:bg-green-500/10',
     },
     {
@@ -289,7 +289,7 @@ export default function AdminAnalyticsPage() {
       value: stats?.totalTenants || 0,
       change: stats?.tenantsGrowth || 0,
       icon: Building2,
-      color: 'text-orange-600',
+      color: 'text-orange-600 dark:text-orange-400',
       bgColor: 'bg-orange-50 dark:bg-orange-500/10',
     },
   ];
@@ -339,8 +339,8 @@ export default function AdminAnalyticsPage() {
                   </p>
                   {card.change !== undefined && (
                     <div className="flex items-center gap-1 mt-2">
-                      <TrendingUp className={`h-4 w-4 ${card.change >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                      <span className={`text-sm ${card.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <TrendingUp className={`h-4 w-4 ${card.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
+                      <span className={`text-sm ${card.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {card.change >= 0 ? '+' : ''}{card.change}%
                       </span>
                       <span className="text-xs text-muted-foreground">vs previous period</span>
@@ -376,7 +376,7 @@ export default function AdminAnalyticsPage() {
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+              <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Total API Calls</p>

@@ -279,7 +279,7 @@ export default function AdminTenantsPage() {
               <p className="text-2xl font-bold mt-1">{loading ? '...' : statsSummary.total}</p>
             </div>
             <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-blue-600" />
+              <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </Card>
@@ -290,7 +290,7 @@ export default function AdminTenantsPage() {
               <p className="text-2xl font-bold mt-1">{loading ? '...' : statsSummary.byPlan.free || 0}</p>
             </div>
             <div className="h-10 w-10 rounded-lg bg-green-50 dark:bg-green-500/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-green-600" />
+              <Building2 className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
           </div>
         </Card>
@@ -301,7 +301,7 @@ export default function AdminTenantsPage() {
               <p className="text-2xl font-bold mt-1">{loading ? '...' : statsSummary.byPlan.pro || 0}</p>
             </div>
             <div className="h-10 w-10 rounded-lg bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-purple-600" />
+              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
         </Card>
