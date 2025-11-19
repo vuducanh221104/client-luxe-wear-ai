@@ -7,9 +7,11 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { logout as apiLogout, clearTokens } from "@/services/authUserService";
 import UserAvatar from "@/components/user-avatar";
-import { Bot, BarChart2, UserRoundCog, SlidersHorizontal, Shield, Book, MessageSquare, ArrowLeft } from "lucide-react";
+import { Bot, BarChart2, UserRoundCog, SlidersHorizontal, Shield, Book, MessageSquare, ArrowLeft, LogOut } from "lucide-react";
 import { Code2 } from "lucide-react";
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type NavItem = { href: string; label: string; icon?: React.ElementType };
 
@@ -53,6 +55,8 @@ export default function DashboardLayout({
   const nav = currentAgentId ? agentNav : defaultNav;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -64,14 +68,38 @@ export default function DashboardLayout({
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await apiLogout();
+      dispatch(logoutAction());
+      clearTokens();
+      setMenuOpen(false);
+      setLogoutDialogOpen(false);
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Still clear local state even if API call fails
+      dispatch(logoutAction());
+      clearTokens();
+      setMenuOpen(false);
+      setLogoutDialogOpen(false);
+      router.push("/auth/login");
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 w-full border-b bg-background">
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-12 items-center justify-between px-4">
           {/* Left: Logo + workspace name placeholder */}
           <div className="flex items-center gap-3">
-            <img src="/logoGobal.png" alt="LuxeWear" className="h-6 w-auto" />
+            <Link href="/dashboard">
+              <img src="/logoGobal.png" alt="LuxeWear" className="h-6 w-auto hover:opacity-80 transition-opacity" />
+            </Link>
             <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">LuxeWear</span>
               <span>/</span>
@@ -82,8 +110,8 @@ export default function DashboardLayout({
           {/* Right: quick links */}
           <nav className="flex items-center gap-5 text-sm font-medium">
             <TenantSwitcher />
-            <Link href="/docs/user-guides" className="hover:text-foreground/80">Docs</Link>
-            <Link href="/dashboard/pages/settings" className="hover:text-foreground/80">Settings</Link>
+            <Link href="/docs/user-guides" className="hover:text-foreground/80 transition-colors">Docs</Link>
+            <Link href="/dashboard/pages/settings" className="hover:text-foreground/80 transition-colors">Settings</Link>
             <div className="relative" ref={menuRef}>
               <button
                 className="overflow-hidden rounded-full"
@@ -93,26 +121,24 @@ export default function DashboardLayout({
                 <UserAvatar image={user?.avatar_url || undefined} fallback={(user?.name || user?.email || "U").slice(0,2).toUpperCase()} className="h-7 w-7" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-2xl border bg-background shadow-xl">
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl border bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="p-4">
                     <div className="text-base font-semibold">{user?.name || "User"}</div>
                     <div className="text-sm text-muted-foreground">{user?.email || ""}</div>
                   </div>
                   <div className="h-px bg-border" />
                   <div className="p-2">
-                    <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-muted">Dashboard</Link>
+                    <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors">Dashboard</Link>
 
                     <div className="h-px bg-border my-1" />
                     <button
-                      onClick={async () => {
-                        await apiLogout();
-                        dispatch(logoutAction());
-                        clearTokens();
+                      onClick={() => {
                         setMenuOpen(false);
-                        router.push("/auth/login");
+                        setLogoutDialogOpen(true);
                       }}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                      className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
                     >
+                      <LogOut className="h-4 w-4" />
                       Sign out
                     </button>
                   </div>
@@ -152,8 +178,8 @@ export default function DashboardLayout({
                   key={item.href}
                   href={item.href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted focus:bg-muted focus:text-foreground ${
-                    isActive ? "bg-muted text-foreground" : "text-muted-foreground"
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-muted focus:bg-muted focus:text-foreground ${
+                    isActive ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {Icon ? <Icon className="h-4 w-4" /> : null}
@@ -169,6 +195,48 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5 text-red-600" />
+              Sign out
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to sign out? You&apos;ll need to sign in again to access your account.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setLogoutDialogOpen(false)}
+              disabled={loggingOut}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="gap-2"
+            >
+              {loggingOut ? (
+                <>
+                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

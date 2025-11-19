@@ -92,30 +92,30 @@ export default function PricingPage() {
   ];
 
   return (
-    <section className="py-14">
+    <section className="py-14 md:py-20">
       <div className="container mx-auto px-4">
-        <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
             Predictable pricing
             <br /> scalable plans
           </h1>
-          <p className="mt-3 text-sm md:text-base text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
             Designed for every stage of your journey.
           </p>
 
-          <div className="mt-5 inline-flex items-center rounded-full border bg-background p-1 text-sm">
+          <div className="mt-6 inline-flex items-center rounded-full border bg-background p-1 text-sm shadow-sm">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-4 py-1.5 rounded-full ${
-                billing === "monthly" ? "bg-foreground text-background" : ""
+              className={`px-4 py-1.5 rounded-full transition-all duration-200 ${
+                billing === "monthly" ? "bg-foreground text-background shadow-sm" : "hover:bg-muted"
               }`}
             >
               Monthly
             </button>
             <button
               onClick={() => setBilling("yearly")}
-              className={`px-4 py-1.5 rounded-full ${
-                billing === "yearly" ? "bg-foreground text-background" : ""
+              className={`px-4 py-1.5 rounded-full transition-all duration-200 ${
+                billing === "yearly" ? "bg-foreground text-background shadow-sm" : "hover:bg-muted"
               }`}
             >
               Yearly
@@ -124,9 +124,9 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing grid */}
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {plans.map((plan) => (
-            <div key={plan.key} className="rounded-3xl border bg-background">
+            <div key={plan.key} className={`rounded-3xl border bg-background transition-all duration-300 hover:shadow-lg ${plan.popular ? 'ring-2 ring-foreground/20' : 'hover:border-foreground/20'}`}>
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b">
                 <div className="inline-flex items-center gap-2 text-sm font-semibold">
@@ -134,7 +134,7 @@ export default function PricingPage() {
                   <span>{plan.name}</span>
                 </div>
                 {plan.popular ? (
-                  <span className="rounded-full bg-black text-white text-xs px-3 py-1">Popular</span>
+                  <span className="rounded-full bg-black text-white text-xs px-3 py-1 font-medium">Popular</span>
                 ) : null}
               </div>
 
@@ -154,8 +154,10 @@ export default function PricingPage() {
                 )}
 
                 <button
-                  className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium border ${
-                    plan.popular ? "bg-black text-white border-black" : "bg-background"
+                  className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium border transition-all duration-200 ${
+                    plan.popular 
+                      ? "bg-black text-white border-black hover:bg-black/90 hover:shadow-md" 
+                      : "bg-background hover:bg-muted hover:border-foreground/20"
                   }`}
                 >
                   {plan.cta}
@@ -165,9 +167,9 @@ export default function PricingPage() {
               {/* Features */}
               <ul className="px-6 py-6 space-y-3 text-sm">
                 {plan.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-foreground" />
-                    <span>{f}</span>
+                  <li key={i} className="flex items-start gap-2.5">
+                    <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-foreground shrink-0" />
+                    <span className="leading-relaxed">{f}</span>
                   </li>
                 ))}
               </ul>

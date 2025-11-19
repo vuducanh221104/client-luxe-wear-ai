@@ -20,18 +20,23 @@ export function SidebarNav({ className, items, ...props }: SidebarNavProps) {
     <nav
       className={cn("flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1", className)}
       {...props}>
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            pathname === item.href ? "bg-muted hover:bg-muted" : "hover:bg-muted",
-            "justify-start"
-          )}>
-          {item.title}
-        </Link>
-      ))}
+      {items.map((item) => {
+        const isActive = pathname === item.href || (item.href === "/dashboard/pages/settings" && pathname?.startsWith("/dashboard/pages/settings"));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              isActive 
+                ? "bg-muted text-foreground hover:bg-muted" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "justify-start transition-colors"
+            )}>
+            {item.title}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

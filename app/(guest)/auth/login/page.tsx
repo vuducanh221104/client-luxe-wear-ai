@@ -2,8 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { generateMeta } from "@/lib/utils";
-import { GithubIcon } from "lucide-react";
+import { GithubIcon, Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +17,7 @@ export default function LoginPageV1() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -69,94 +69,146 @@ export default function LoginPageV1() {
   });
 
   return (
-    <div className="flex pb-8 lg:h-screen lg:pb-0">
-      <div className="hidden w-1/2 bg-gray-100 lg:block">
-        <img src={`/images/cover.png`} alt="Login visual" className="h-full w-full object-cover" />
+    <div className="flex min-h-screen pb-8 lg:pb-0">
+      <div className="hidden w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-background lg:flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+        <div className="relative z-10 max-w-md px-8 text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 mb-4">
+            <img src="/logoGobal.png" alt="LuxeWear" className="h-12 w-auto" />
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight">Welcome to LuxeWear</h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Build and deploy AI agents that deliver exceptional customer experiences.
+          </p>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="flex w-full items-center justify-center lg:w-1/2">
-        <div className="w-full max-w-md space-y-8 px-4">
-          <div className="text-center">
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">Welcome back</h2>
-            <p className="mt-2 text-sm text-gray-600">Please sign in to your account</p>
+      <div className="flex w-full items-center justify-center lg:w-1/2 bg-background">
+        <div className="w-full max-w-md space-y-8 px-4 py-12">
+          <div className="text-center space-y-2">
+            <Link href="/" className="inline-block mb-4">
+              <img src="/logoGobal.png" alt="LuxeWear" className="h-10 w-auto mx-auto" />
+            </Link>
+            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight">Welcome back</h2>
+            <p className="text-sm md:text-base text-muted-foreground">Please sign in to your account</p>
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={onSubmit}>
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="email" className={errors.email ? "text-red-600" : ""}>
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="email" className={`text-sm font-medium ${errors.email ? "text-destructive" : ""}`}>
                   Email address
                 </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  {...register("email", {
-                    required: "Vui lòng nhập email",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Email không hợp lệ",
-                    },
-                  })}
-                  className={`w-full ${errors.email ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                  placeholder="Email address"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    {...register("email", {
+                      required: "Vui lòng nhập email",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Email không hợp lệ",
+                      },
+                    })}
+                    className={`w-full pl-10 h-11 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    placeholder="your.email@example.com"
+                  />
+                </div>
                 {errors.email && (
-                  <p className="mt-1 text-sm font-medium text-red-600">{errors.email.message}</p>
+                  <p className="mt-1 text-sm font-medium text-destructive">{errors.email.message}</p>
                 )}
               </div>
-              <div className="space-y-1">
-                <Label htmlFor="password" className={errors.password ? "text-red-600" : ""}>
+              <div className="space-y-2">
+                <Label htmlFor="password" className={`text-sm font-medium ${errors.password ? "text-destructive" : ""}`}>
                   Password
                 </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  {...register("password", {
-                    required: "Vui lòng nhập mật khẩu",
-                    minLength: { value: 6, message: "Mật khẩu tối thiểu 6 ký tự" },
-                  })}
-                  className={`w-full ${errors.password ? "border-red-500 focus-visible:ring-red-500" : ""}`}
-                  placeholder="Password"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    {...register("password", {
+                      required: "Vui lòng nhập mật khẩu",
+                      minLength: { value: 6, message: "Mật khẩu tối thiểu 6 ký tự" },
+                    })}
+                    className={`w-full pl-10 pr-10 h-11 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.password && (
-                  <p className="mt-1 text-sm font-medium text-red-600">{errors.password.message}</p>
+                  <p className="mt-1 text-sm font-medium text-destructive">{errors.password.message}</p>
                 )}
               </div>
               {apiError && (
-                <div className="rounded-md bg-red-50 border border-red-200 p-3">
-                  <p className="text-sm font-medium text-red-800">{apiError}</p>
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3">
+                  <p className="text-sm font-medium text-destructive">{apiError}</p>
                 </div>
               )}
-              <div className="text-end">
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="remember"
+                    name="remember"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <label htmlFor="remember" className="text-sm text-muted-foreground">
+                    Remember me
+                  </label>
+                </div>
+                <Link href="/auth/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                  Forgot password?
                 </Link>
               </div>
             </div>
 
-            <div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Signing in..." : "Sign in"}
+            <div className="space-y-4">
+              <Button 
+                type="submit" 
+                className="w-full h-11 text-base font-semibold rounded-xl" 
+                disabled={isSubmitting}
+                style={{
+                  background: "linear-gradient(90deg, #FF7A7A 0%, #FF8C5A 25%, #FFB056 50%, #A77BFF 75%, #6C7BFF 100%)",
+                }}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Signing in...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    Sign in <ArrowRight className="h-4 w-4" />
+                  </span>
+                )}
               </Button>
             </div>
           </form>
 
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-muted px-2 text-gray-500">or continue with</span>
+                <span className="bg-background px-3 text-muted-foreground">or continue with</span>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full h-11 hover:bg-muted transition-colors" type="button">
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
                     fill="currentColor"
@@ -177,15 +229,15 @@ export default function LoginPageV1() {
                 </svg>
                 Google
               </Button>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full h-11 hover:bg-muted transition-colors" type="button">
                 <GithubIcon className="mr-2 h-4 w-4" />
                 GitHub
               </Button>
             </div>
 
-            <div className="mt-6 text-center text-sm">
+            <div className="mt-6 text-center text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <Link href="/auth/register" className="underline">
+              <Link href="/auth/register" className="font-medium text-primary hover:underline transition-colors">
                 Sign up
               </Link>
             </div>

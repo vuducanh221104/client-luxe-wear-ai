@@ -85,9 +85,9 @@ export default function DashboardHomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">AI Agents</h1>
-        <Button onClick={() => router.push("/dashboard/agents/new")} disabled={!currentTenant}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold">AI Agents</h1>
+        <Button onClick={() => router.push("/dashboard/agents/new")} disabled={!currentTenant} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           New AI Agent
         </Button>
@@ -143,8 +143,8 @@ export default function DashboardHomePage() {
               ))}
             </div>
           ) : agents.length === 0 ? (
-            <div className="text-center py-12 border rounded-2xl">
-              <p className="text-muted-foreground">No agents yet in this tenant</p>
+            <div className="text-center py-16 border rounded-2xl bg-muted/20">
+              <p className="text-muted-foreground mb-4">No agents yet in this tenant</p>
               <Button className="mt-4" onClick={() => router.push("/dashboard/agents/new")}>
                 Create your first agent
               </Button>
@@ -153,20 +153,20 @@ export default function DashboardHomePage() {
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {agents.map((agent) => (
-                  <div key={agent.id} className="rounded-2xl border overflow-hidden group">
+                  <div key={agent.id} className="rounded-2xl border overflow-hidden group hover:shadow-lg transition-all duration-300 hover:border-foreground/20">
                     <div
-                      className="h-56 bg-gradient-to-r cursor-pointer"
+                      className="h-56 bg-gradient-to-r cursor-pointer transition-transform duration-300 group-hover:scale-[1.02]"
                       style={{
                         background: `linear-gradient(135deg, ${agent.gradient_color || "#4F46E5"} 0%, ${agent.gradient_color_end || "#7C3AED"} 100%)`,
                       }}
                       onClick={() => router.push(`/dashboard/agents/${agent.id}`)}
                     >
                     </div>
-                    <div className="flex items-center justify-between p-4">
-                      <div>
-                        <h3 className="font-semibold">{agent.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2">{agent.description || "No description"}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                    <div className="flex items-center justify-between p-4 bg-background">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base mb-1 truncate">{agent.name}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{agent.description || "No description"}</p>
+                        <p className="text-xs text-muted-foreground">
                           {(() => {
                             const raw = agent.createdAt || agent.created_at;
                             const d = raw ? new Date(raw) : null;
@@ -175,10 +175,11 @@ export default function DashboardHomePage() {
                           })()}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 ml-4 shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="hover:bg-muted"
                           onClick={(e) => {
                             e.stopPropagation();
                             setChatAgentId(agent.id);
@@ -189,7 +190,7 @@ export default function DashboardHomePage() {
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="hover:bg-muted">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
