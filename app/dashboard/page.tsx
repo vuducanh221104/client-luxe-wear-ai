@@ -89,22 +89,22 @@ export default function DashboardHomePage() {
         <h1 className="text-2xl md:text-3xl font-bold">AI Agents</h1>
         <Button onClick={() => router.push("/dashboard/agents/new")} disabled={!currentTenant} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
-          New AI Agent
+          Tạo AI Agent mới
         </Button>
       </div>
 
       {showTenantEmpty ? (
         <div className="text-center py-12 border rounded-2xl">
-          <p className="text-muted-foreground">Select or create a tenant workspace to view agents.</p>
+          <p className="text-muted-foreground">Chọn hoặc tạo workspace tenant để xem agents.</p>
           <div className="mt-4 flex justify-center gap-2">
-            <Button onClick={() => router.push("/dashboard/tenants")}>Go to Tenants</Button>
+            <Button onClick={() => router.push("/dashboard/tenants")}>Đi đến Tenants</Button>
           </div>
         </div>
       ) : (
         <>
           <div className="flex gap-3">
             <Input
-              placeholder="Search agents..."
+              placeholder="Tìm kiếm agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
@@ -114,17 +114,17 @@ export default function DashboardHomePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="created_at-DESC">Newest First</SelectItem>
-                <SelectItem value="created_at-ASC">Oldest First</SelectItem>
-                <SelectItem value="name-ASC">Name A-Z</SelectItem>
-                <SelectItem value="name-DESC">Name Z-A</SelectItem>
+                <SelectItem value="created_at-DESC">Mới nhất trước</SelectItem>
+                <SelectItem value="created_at-ASC">Cũ nhất trước</SelectItem>
+                <SelectItem value="name-ASC">Tên A-Z</SelectItem>
+                <SelectItem value="name-DESC">Tên Z-A</SelectItem>
               </SelectContent>
             </Select>
             <Select value={String(perPage)} onValueChange={(v) => { setPerPage(parseInt(v)); setPage(1); }}>
-              <SelectTrigger className="w-[110px]"><SelectValue placeholder="Per page" /></SelectTrigger>
+              <SelectTrigger className="w-[110px]"><SelectValue placeholder="Mỗi trang" /></SelectTrigger>
               <SelectContent>
                 {[6,12,24,36].map((n) => (
-                  <SelectItem key={n} value={String(n)}>{n}/page</SelectItem>
+                  <SelectItem key={n} value={String(n)}>{n}/trang</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -144,9 +144,9 @@ export default function DashboardHomePage() {
             </div>
           ) : agents.length === 0 ? (
             <div className="text-center py-16 border rounded-2xl bg-muted/20">
-              <p className="text-muted-foreground mb-4">No agents yet in this tenant</p>
+              <p className="text-muted-foreground mb-4">Chưa có agent nào trong tenant này</p>
               <Button className="mt-4" onClick={() => router.push("/dashboard/agents/new")}>
-                Create your first agent
+                Tạo agent đầu tiên của bạn
               </Button>
             </div>
           ) : (
@@ -165,13 +165,13 @@ export default function DashboardHomePage() {
                     <div className="flex items-center justify-between p-4 bg-background">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base mb-1 truncate">{agent.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{agent.description || "No description"}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{agent.description || "Không có mô tả"}</p>
                         <p className="text-xs text-muted-foreground">
                           {(() => {
                             const raw = agent.createdAt || agent.created_at;
                             const d = raw ? new Date(raw) : null;
                             const valid = d && !isNaN(d.getTime());
-                            return `Created ${valid ? d!.toLocaleString() : "N/A"}`;
+                            return `Đã tạo ${valid ? d!.toLocaleString('vi-VN') : "N/A"}`;
                           })()}
                         </p>
                       </div>
@@ -195,7 +195,7 @@ export default function DashboardHomePage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/agents/${agent.id}`)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/agents/${agent.id}`)}>Chỉnh sửa</DropdownMenuItem>
                             <DropdownMenuItem onClick={async () => {
                               try {
                                 const res = await getAgent(agent.id);
@@ -207,16 +207,16 @@ export default function DashboardHomePage() {
                                 } as any;
                                 const created = await createAgent(payload);
                                 if (created.success) {
-                                  toast.success("Agent duplicated");
+                                  toast.success("Đã sao chép agent");
                                   loadAgents(searchTerm);
                                 } else {
-                                  toast.error(created.message || "Failed to duplicate");
+                                  toast.error(created.message || "Sao chép thất bại");
                                 }
                               } catch (e: any) {
-                                toast.error(e?.response?.data?.message || e?.message || "Failed to duplicate");
+                                toast.error(e?.response?.data?.message || e?.message || "Sao chép thất bại");
                               }
-                            }}>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => setConfirmOpen({ id: agent.id, name: agent.name })}>Delete</DropdownMenuItem>
+                            }}>Sao chép</DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600" onClick={() => setConfirmOpen({ id: agent.id, name: agent.name })}>Xóa</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -231,7 +231,7 @@ export default function DashboardHomePage() {
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                   >
-                    Previous
+                    Trước
                   </Button>
                   <span className="py-2 px-4">{page} / {Math.ceil(total / perPage)}</span>
                   <Button
@@ -239,7 +239,7 @@ export default function DashboardHomePage() {
                     onClick={() => setPage((p) => Math.min(Math.ceil(total / perPage), p + 1))}
                     disabled={page >= Math.ceil(total / perPage)}
                   >
-                    Next
+                    Sau
                   </Button>
                 </div>
               )}
@@ -251,11 +251,11 @@ export default function DashboardHomePage() {
       <Dialog open={!!confirmOpen} onOpenChange={(o) => { if (!o) setConfirmOpen(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete agent</DialogTitle>
+            <DialogTitle>Xóa agent</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Are you sure you want to delete {confirmOpen?.name}? This action cannot be undone.</p>
+          <p className="text-sm text-muted-foreground">Bạn có chắc chắn muốn xóa {confirmOpen?.name}? Hành động này không thể hoàn tác.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setConfirmOpen(null)}>Hủy</Button>
             <Button
               variant="destructive"
               onClick={async () => {
@@ -263,19 +263,19 @@ export default function DashboardHomePage() {
                 try {
                   const res = await deleteAgent(confirmOpen.id);
                   if (res.success) {
-                    toast.success("Agent deleted");
+                    toast.success("Đã xóa agent");
                     setConfirmOpen(null);
                     // reload current page
                     loadAgents(searchTerm);
                   } else {
-                    toast.error(res.message || "Failed to delete agent");
+                    toast.error(res.message || "Xóa agent thất bại");
                   }
                 } catch (e: any) {
-                  toast.error(e?.response?.data?.message || e?.message || "Failed to delete agent");
+                  toast.error(e?.response?.data?.message || e?.message || "Xóa agent thất bại");
                 }
               }}
             >
-              Delete
+              Xóa
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -284,11 +284,11 @@ export default function DashboardHomePage() {
       <Dialog open={!!chatAgentId} onOpenChange={(o) => { if (!o) { setChatAgentId(null); setChatMessages([]); } }}>
         <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
-            <DialogTitle>Quick chat</DialogTitle>
+            <DialogTitle>Trò chuyện nhanh</DialogTitle>
           </DialogHeader>
           <div className="max-h-64 overflow-y-auto space-y-2 border rounded-md p-3 bg-muted/30">
             {chatMessages.length === 0 && (
-              <p className="text-xs text-muted-foreground">Start a quick conversation with this agent.</p>
+              <p className="text-xs text-muted-foreground">Bắt đầu cuộc trò chuyện nhanh với agent này.</p>
             )}
             {chatMessages.map((m, idx) => (
               <div key={idx} className={m.role === "user" ? "text-right" : "text-left"}>
@@ -299,9 +299,9 @@ export default function DashboardHomePage() {
             ))}
           </div>
           <div className="space-y-2">
-            <Textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Type a message..." />
+            <Textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Nhập tin nhắn..." />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setChatInput("")}>Clear</Button>
+              <Button variant="outline" onClick={() => setChatInput("")}>Xóa</Button>
               <Button
                 onClick={async () => {
                   if (!chatAgentId || !chatInput.trim()) return;
@@ -311,17 +311,17 @@ export default function DashboardHomePage() {
                   setChatLoading(true);
                   try {
                     const res = await chat(chatAgentId, { message: msg });
-                    const reply = res.data?.response || res.data?.message || "(no response)";
+                    const reply = res.data?.response || res.data?.message || "(không có phản hồi)";
                     setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
                   } catch (e: any) {
-                    toast.error(e?.response?.data?.message || e?.message || "Chat failed");
+                    toast.error(e?.response?.data?.message || e?.message || "Trò chuyện thất bại");
                   } finally {
                     setChatLoading(false);
                   }
                 }}
                 disabled={chatLoading}
               >
-                {chatLoading ? "Sending..." : "Send"}
+                {chatLoading ? "Đang gửi..." : "Gửi"}
               </Button>
             </div>
           </div>

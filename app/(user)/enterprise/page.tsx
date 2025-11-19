@@ -33,7 +33,7 @@ export default function EnterprisePage() {
     // TODO: Implement form submission
     setTimeout(() => {
       setSubmitting(false);
-      alert("Thank you! Our team will reach out to you soon.");
+      alert("Cảm ơn bạn! Nhóm của chúng tôi sẽ liên hệ với bạn sớm.");
       setFormData({ email: "", message: "" });
     }, 1000);
   };
@@ -45,12 +45,12 @@ export default function EnterprisePage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight">
-              Enterprise-ready AI
+              AI sẵn sàng cho doanh nghiệp
               <br />
-              for customer service
+              cho dịch vụ khách hàng
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Scale customer support with enterprise-grade AI agents. Handle massive volumes with advanced infrastructure, intelligent automation, and team support. Deliver exceptional experiences with unmatched reliability.
+              Mở rộng quy mô hỗ trợ khách hàng với các AI Agent cấp doanh nghiệp. Xử lý khối lượng lớn với cơ sở hạ tầng tiên tiến, tự động hóa thông minh và hỗ trợ nhóm. Cung cấp trải nghiệm đặc biệt với độ tin cậy vô song.
             </p>
             <div className="pt-4">
               <Button 
@@ -61,7 +61,7 @@ export default function EnterprisePage() {
                 }}
                 asChild
               >
-                <Link href="#contact">Contact us</Link>
+                <Link href="#contact">Liên hệ chúng tôi</Link>
               </Button>
             </div>
           </div>
@@ -72,7 +72,7 @@ export default function EnterprisePage() {
       <section className="py-12 border-y">
         <div className="container mx-auto px-4">
           <p className="text-center text-sm text-muted-foreground mb-8">
-            Trusted by 10,000+ businesses worldwide
+            Được tin tưởng bởi hơn 10,000 doanh nghiệp trên toàn thế giới
           </p>
           <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-60">
             <div className="text-2xl font-bold text-muted-foreground">SIEMENS</div>
@@ -89,10 +89,10 @@ export default function EnterprisePage() {
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground mx-auto justify-center">
-            <span className="h-2 w-2 rounded-full bg-pink-500" /> Features
+            <span className="h-2 w-2 rounded-full bg-pink-500" /> Tính năng
           </div>
           <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-center mb-12 md:mb-16">
-            What&apos;s included in Enterprise
+            Những gì được bao gồm trong Enterprise
           </h2>
 
           {/* Primary Feature Cards */}
@@ -104,12 +104,12 @@ export default function EnterprisePage() {
                   <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                     <Users className="h-8 w-8 text-white" />
                   </div>
-                  <div className="text-sm font-semibold">24/7 Support</div>
+                  <div className="text-sm font-semibold">Hỗ trợ 24/7</div>
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Dedicated account manager</h3>
+              <h3 className="text-xl font-bold mb-2">Quản lý tài khoản chuyên dụng</h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                Enjoy 24/7 support, monitoring, and guidance from your expert.
+                Tận hưởng hỗ trợ, giám sát và hướng dẫn 24/7 từ chuyên gia của bạn.
               </p>
             </div>
 
@@ -124,9 +124,9 @@ export default function EnterprisePage() {
                   ))}
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">Custom integrations</h3>
+              <h3 className="text-xl font-bold mb-2">Tích hợp tùy chỉnh</h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                We build tailored integrations to seamlessly fit your internal tools and workflows.
+                Chúng tôi xây dựng các tích hợp được tùy chỉnh để phù hợp liền mạch với các công cụ và quy trình làm việc nội bộ của bạn.
               </p>
             </div>
 
@@ -159,14 +159,14 @@ export default function EnterprisePage() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <div className="text-2xl font-bold">1.04s</div>
-                      <div className="text-xs text-muted-foreground">Response</div>
+                      <div className="text-xs text-muted-foreground">Phản hồi</div>
                     </div>
                   </div>
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2">SLA guarantees</h3>
+              <h3 className="text-xl font-bold mb-2">Đảm bảo SLA</h3>
               <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                Enjoy enterprise-grade uptime, reliability, and support with SLAs.
+                Tận hưởng thời gian hoạt động, độ tin cậy và hỗ trợ cấp doanh nghiệp với SLA.
               </p>
             </div>
           </div>
@@ -179,9 +179,9 @@ export default function EnterprisePage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Advanced security features</h3>
+                  <h3 className="font-semibold mb-2">Tính năng bảo mật nâng cao</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Includes SSO, detailed audit logs, and robust custom security controls for compliance.
+                    Bao gồm SSO, nhật ký kiểm tra chi tiết và các điều khiển bảo mật tùy chỉnh mạnh mẽ để tuân thủ.
                   </p>
                 </div>
               </div>
@@ -193,9 +193,9 @@ export default function EnterprisePage() {
                   <TrendingUp className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Prioritized features on roadmap</h3>
+                  <h3 className="font-semibold mb-2">Tính năng ưu tiên trên lộ trình</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Influence our roadmap by shaping what we build next based on your enterprise needs.
+                    Ảnh hưởng đến lộ trình của chúng tôi bằng cách định hình những gì chúng tôi xây dựng tiếp theo dựa trên nhu cầu doanh nghiệp của bạn.
                   </p>
                 </div>
               </div>
@@ -207,9 +207,9 @@ export default function EnterprisePage() {
                   <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Higher limits</h3>
+                  <h3 className="font-semibold mb-2">Giới hạn cao hơn</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Access increased usage limits across agents, sources, and message volume to scale.
+                    Truy cập các giới hạn sử dụng tăng lên trên các agent, nguồn và khối lượng tin nhắn để mở rộng quy mô.
                   </p>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export default function EnterprisePage() {
               <div className="absolute bottom-0 right-0 w-32 h-32 bg-yellow-500/20 rounded-full translate-x-1/2 translate-y-1/2 blur-3xl" />
               <div className="relative z-10 text-center">
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-6">
-                  &quot;LuxeWear is a strong signal of how customer support will evolve. It is an early adopter of the agentic approach, which will become increasingly effective, trusted, and prominent.&quot;
+                  &quot;LuxeWear là một tín hiệu mạnh mẽ về cách hỗ trợ khách hàng sẽ phát triển. Đây là người áp dụng sớm phương pháp agentic, điều này sẽ ngày càng hiệu quả, đáng tin cậy và nổi bật.&quot;
                 </p>
                 <div className="flex items-center justify-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
@@ -251,17 +251,17 @@ export default function EnterprisePage() {
             {/* Left: Heading + copy + badges */}
             <div className="space-y-6">
               <div className="inline-flex items-center rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-pink-500 mr-2" /> Security
+                <span className="h-2 w-2 rounded-full bg-pink-500 mr-2" /> Bảo mật
               </div>
               <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-                Enterprise-grade
+                Bảo mật & quyền riêng tư
                 <br />
-                security & privacy
+                cấp doanh nghiệp
               </h2>
               <p className="text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed">
-                We take security and compliance seriously. LuxeWear is SOC 2 Type II and
-                GDPR compliant, trusted by thousands of businesses to build secure and
-                compliant AI Agents.
+                Chúng tôi coi trọng bảo mật và tuân thủ. LuxeWear tuân thủ SOC 2 Type II và
+                GDPR, được tin tưởng bởi hàng nghìn doanh nghiệp để xây dựng các AI Agent
+                an toàn và tuân thủ.
               </p>
               <div className="flex items-center gap-8 pt-4">
                 <div className="h-20 w-auto bg-muted rounded-lg flex items-center justify-center px-4">
@@ -277,9 +277,9 @@ export default function EnterprisePage() {
             <div className="rounded-3xl border overflow-hidden divide-y hover:shadow-lg transition-shadow duration-300">
               <div className="flex items-center justify-between p-6 md:p-8 hover:bg-muted/30 transition-colors">
                 <div className="max-w-xl">
-                  <h3 className="text-xl font-semibold mb-2">Your data stays yours</h3>
+                  <h3 className="text-xl font-semibold mb-2">Dữ liệu của bạn vẫn thuộc về bạn</h3>
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                    Your data is only accessible to your AI agent and is never used to train models.
+                    Dữ liệu của bạn chỉ có thể truy cập bởi AI Agent của bạn và không bao giờ được sử dụng để huấn luyện mô hình.
                   </p>
                 </div>
                 <div className="h-24 w-24 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center shrink-0">
@@ -288,9 +288,9 @@ export default function EnterprisePage() {
               </div>
               <div className="flex items-center justify-between p-6 md:p-8 hover:bg-muted/30 transition-colors">
                 <div className="max-w-xl">
-                  <h3 className="text-xl font-semibold mb-2">Data encryption</h3>
+                  <h3 className="text-xl font-semibold mb-2">Mã hóa dữ liệu</h3>
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                    All data is encrypted at rest and in transit using industry-standard encryption algorithms.
+                    Tất cả dữ liệu được mã hóa khi nghỉ và khi truyền tải bằng các thuật toán mã hóa tiêu chuẩn ngành.
                   </p>
                 </div>
                 <div className="h-24 w-24 rounded-lg bg-gradient-to-br from-green-500/20 to-yellow-500/20 flex items-center justify-center shrink-0">
@@ -299,9 +299,9 @@ export default function EnterprisePage() {
               </div>
               <div className="flex items-center justify-between p-6 md:p-8 hover:bg-muted/30 transition-colors">
                 <div className="max-w-xl">
-                  <h3 className="text-xl font-semibold mb-2">Secure integrations</h3>
+                  <h3 className="text-xl font-semibold mb-2">Tích hợp an toàn</h3>
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                    We use verified variables to ensure users can access only their own data in your systems.
+                    Chúng tôi sử dụng các biến đã xác minh để đảm bảo người dùng chỉ có thể truy cập dữ liệu của chính họ trong hệ thống của bạn.
                   </p>
                 </div>
                 <div className="h-24 w-24 rounded-lg bg-gradient-to-br from-pink-500/20 to-orange-500/20 flex items-center justify-center shrink-0">
@@ -315,10 +315,10 @@ export default function EnterprisePage() {
           <div className="container mx-auto px-6 mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border py-4 hover:shadow-md transition-shadow duration-300">
             <div className="flex items-center gap-2 text-sm">
               <Shield className="h-4 w-4" />
-              <span>LuxeWear is committed to safeguarding your data.</span>
+              <span>LuxeWear cam kết bảo vệ dữ liệu của bạn.</span>
             </div>
             <Link href="/docs/user-guides" className="inline-flex items-center gap-1 text-sm font-medium hover:text-foreground transition-colors">
-              Learn more <span>→</span>
+              Tìm hiểu thêm <span>→</span>
             </Link>
           </div>
         </div>
@@ -331,13 +331,13 @@ export default function EnterprisePage() {
             {/* Left: Heading + description */}
             <div className="space-y-6">
               <div className="inline-flex items-center rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-pink-500 mr-2" /> Get in touch
+                <span className="h-2 w-2 rounded-full bg-pink-500 mr-2" /> Liên hệ
               </div>
               <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
-                Get started with our enterprise plan
+                Bắt đầu với gói doanh nghiệp của chúng tôi
               </h2>
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
-                Enter your details, and our team will reach out to design a custom plan tailored to your needs.
+                Nhập thông tin chi tiết của bạn, và nhóm của chúng tôi sẽ liên hệ để thiết kế một gói tùy chỉnh phù hợp với nhu cầu của bạn.
               </p>
             </div>
 
@@ -346,12 +346,12 @@ export default function EnterprisePage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium mb-2">
-                    Work email
+                    Email công việc
                   </label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="email.cua.ban@example.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
@@ -360,11 +360,11 @@ export default function EnterprisePage() {
                 </div>
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium mb-2">
-                    How can we help you?
+                    Chúng tôi có thể giúp gì cho bạn?
                   </label>
                   <Textarea
                     id="message"
-                    placeholder="Write your message..."
+                    placeholder="Viết tin nhắn của bạn..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     required
@@ -382,7 +382,7 @@ export default function EnterprisePage() {
                     borderImage: "linear-gradient(90deg, #FF7A7A 0%, #FF8C5A 25%, #FFB056 50%, #A77BFF 75%, #6C7BFF 100%) 1",
                   }}
                 >
-                  {submitting ? "Submitting..." : "Submit"}
+                  {submitting ? "Đang gửi..." : "Gửi"}
                 </Button>
               </form>
             </div>

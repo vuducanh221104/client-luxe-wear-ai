@@ -8,22 +8,22 @@ export default function PricingPage() {
   const plans = [
     {
       key: "free",
-      name: "Free",
+      name: "Miễn phí",
       icon: "/images/pricing/star-1.svg",
       priceMonthly: 0,
       priceYearly: 0,
-      cta: "Get started",
+      cta: "Bắt đầu",
       features: [
-        "Access to fast models",
-        "100 message credits/month",
-        "1 AI agent",
-        "1 AI Action per AI agent",
-        "400 KB per AI agent",
-        "1 seat",
-        "API access",
-        "Embed on unlimited websites",
+        "Truy cập các mô hình nhanh",
+        "100 tin nhắn/tháng",
+        "1 AI Agent",
+        "1 Hành động AI cho mỗi AI Agent",
+        "400 KB cho mỗi AI Agent",
+        "1 chỗ ngồi",
+        "Truy cập API",
+        "Nhúng trên website không giới hạn",
       ],
-      footnote: "AI agents get deleted after 14 days of inactivity on the free plan.",
+      footnote: "AI Agent sẽ bị xóa sau 14 ngày không hoạt động trên gói miễn phí.",
     },
     {
       key: "hobby",
@@ -31,15 +31,15 @@ export default function PricingPage() {
       icon: "/images/pricing/star-2.svg",
       priceMonthly: 40,
       priceYearly: 400,
-      cta: "Subscribe",
+      cta: "Đăng ký",
       features: [
-        "Everything in Free +",
-        "2,000 message credits/month",
-        "1 AI agent",
-        "5 AI Actions per AI agent",
-        "40 MB per AI agent",
-        "Unlimited links to train on",
-        "Basic analytics",
+        "Tất cả trong gói Miễn phí +",
+        "2,000 tin nhắn/tháng",
+        "1 AI Agent",
+        "5 Hành động AI cho mỗi AI Agent",
+        "40 MB cho mỗi AI Agent",
+        "Liên kết không giới hạn để huấn luyện",
+        "Phân tích cơ bản",
       ],
     },
     {
@@ -48,14 +48,14 @@ export default function PricingPage() {
       icon: "/images/pricing/star-3.svg",
       priceMonthly: 150,
       priceYearly: 1500,
-      cta: "Subscribe",
+      cta: "Đăng ký",
       popular: true,
       features: [
-        "Everything in Hobby +",
-        "12,000 message credits/month",
-        "2 AI agents",
-        "10 AI Actions per AI agent",
-        "3 seats",
+        "Tất cả trong gói Hobby +",
+        "12,000 tin nhắn/tháng",
+        "2 AI Agent",
+        "10 Hành động AI cho mỗi AI Agent",
+        "3 chỗ ngồi",
       ],
     },
     {
@@ -64,14 +64,14 @@ export default function PricingPage() {
       icon: "/images/pricing/star-4.svg",
       priceMonthly: 500,
       priceYearly: 5000,
-      cta: "Subscribe",
+      cta: "Đăng ký",
       features: [
-        "Everything in Standard +",
-        "40,000 message credits/month",
-        "3 AI agents",
-        "15 AI Actions per AI agent",
-        "5+ seats",
-        "Advanced analytics",
+        "Tất cả trong gói Standard +",
+        "40,000 tin nhắn/tháng",
+        "3 AI Agent",
+        "15 Hành động AI cho mỗi AI Agent",
+        "5+ chỗ ngồi",
+        "Phân tích nâng cao",
       ],
     },
     {
@@ -80,13 +80,13 @@ export default function PricingPage() {
       icon: "/images/pricing/star-5.svg",
       priceMonthly: null,
       priceYearly: null,
-      cta: "Contact us",
+      cta: "Liên hệ chúng tôi",
       features: [
-        "Everything in Pro +",
-        "Higher limits",
-        "Priority support",
-        "SLAs",
-        "Success manager (CSM)",
+        "Tất cả trong gói Pro +",
+        "Giới hạn cao hơn",
+        "Hỗ trợ ưu tiên",
+        "SLA",
+        "Quản lý thành công (CSM)",
       ],
     },
   ];
@@ -96,11 +96,11 @@ export default function PricingPage() {
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-            Predictable pricing
-            <br /> scalable plans
+            Giá cả minh bạch
+            <br /> Gói dịch vụ mở rộng
           </h1>
           <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Designed for every stage of your journey.
+            Được thiết kế cho mọi giai đoạn hành trình của bạn.
           </p>
 
           <div className="mt-6 inline-flex items-center rounded-full border bg-background p-1 text-sm shadow-sm">
@@ -110,7 +110,7 @@ export default function PricingPage() {
                 billing === "monthly" ? "bg-foreground text-background shadow-sm" : "hover:bg-muted"
               }`}
             >
-              Monthly
+              Hàng tháng
             </button>
             <button
               onClick={() => setBilling("yearly")}
@@ -118,7 +118,7 @@ export default function PricingPage() {
                 billing === "yearly" ? "bg-foreground text-background shadow-sm" : "hover:bg-muted"
               }`}
             >
-              Yearly
+              Hàng năm
             </button>
           </div>
         </div>
@@ -134,21 +134,21 @@ export default function PricingPage() {
                   <span>{plan.name}</span>
                 </div>
                 {plan.popular ? (
-                  <span className="rounded-full bg-black text-white text-xs px-3 py-1 font-medium">Popular</span>
+                  <span className="rounded-full bg-black text-white text-xs px-3 py-1 font-medium">Phổ biến</span>
                 ) : null}
               </div>
 
               {/* Price */}
               <div className="px-6 pt-6">
                 {plan.priceMonthly === null ? (
-                  <div className="text-2xl font-semibold">Let's Talk</div>
+                  <div className="text-2xl font-semibold">Liên hệ</div>
                 ) : (
                   <>
                     <div className="text-4xl font-extrabold">
                       ${billing === "monthly" ? plan.priceMonthly : plan.priceYearly}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      per {billing === "monthly" ? "month" : "year"}
+                      {billing === "monthly" ? "mỗi tháng" : "mỗi năm"}
                     </div>
                   </>
                 )}
