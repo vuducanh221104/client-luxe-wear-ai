@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Brand & actions */}
           <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white text-black font-bold">C</span>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-white text-black font-bold">L</span>
               <span className="text-lg font-semibold">LuxeWear</span>
             </div>
             <div className="text-sm text-zinc-400">© 2025 LuxeWear, Inc.</div>
