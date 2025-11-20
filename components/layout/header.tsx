@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ChevronDown, BookOpen, FileCode, RefreshCcw, BookMarked, LogOut } from "lucide-react";
+import { ChevronDown, BookOpen, FileCode, RefreshCcw, BookMarked, LogOut, Shield } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
@@ -21,6 +21,9 @@ export default function Header() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const isAuthenticated = !!user;
+  // Check if user is admin - handle different role formats (admin, super_admin, etc.)
+  const userRole = user?.role?.toLowerCase()?.trim();
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -166,6 +169,16 @@ export default function Header() {
                       <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors">
                         Dashboard
                       </Link>
+                      {isAdmin && (
+                        <Link 
+                          href="/admin/dashboard" 
+                          onClick={() => setMenuOpen(false)} 
+                          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                          <Shield className="h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      )}
                       <div className="h-px bg-border my-1" />
                       <button
                         onClick={() => {

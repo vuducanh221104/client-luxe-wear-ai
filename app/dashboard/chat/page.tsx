@@ -152,16 +152,29 @@ export default function ChatPage() {
           {messages.length === 0 ? (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">No messages yet</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {messages.map((m, i) => (
-                <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-                  <div className="inline-flex items-start gap-2">
-                    <span className={"inline-block max-w-[80%] whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-sm shadow " + (m.role === "user" ? "bg-white" : "bg-white") }>
-                      {m.role === "assistant" ? <Markdown>{m.content}</Markdown> : m.content}
-                    </span>
+                <div key={i} className={`flex flex-col gap-2 ${m.role === "user" ? "items-end" : "items-start"}`}>
+                  <div className={`flex items-start gap-3 max-w-[85%] ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                    <div className="flex-1">
+                      <div className={`rounded-lg px-4 py-3 text-sm shadow-sm ${
+                        m.role === "user" 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-background border"
+                      }`}>
+                        {m.role === "assistant" ? (
+                          <div className="prose prose-sm max-w-none dark:prose-invert">
+                            <Markdown>{m.content}</Markdown>
+                          </div>
+                        ) : (
+                          <div className="whitespace-pre-wrap break-words">{m.content}</div>
+                        )}
+                      </div>
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="shrink-0"
                       onClick={() => {
                         navigator.clipboard.writeText(m.content);
                         toast.success("Copied");

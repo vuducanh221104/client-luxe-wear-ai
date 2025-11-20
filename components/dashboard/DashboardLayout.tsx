@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { logout as apiLogout, clearTokens } from "@/services/authUserService";
 import UserAvatar from "@/components/user-avatar";
-import { Bot, BarChart2, UserRoundCog, SlidersHorizontal, Shield, Book, MessageSquare, ArrowLeft, LogOut } from "lucide-react";
+import { Bot, BarChart2, UserRoundCog, SlidersHorizontal, Shield, Book, MessageSquare, ArrowLeft, LogOut, LayoutDashboard, Home } from "lucide-react";
 import { Code2 } from "lucide-react";
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +24,9 @@ export default function DashboardLayout({
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const currentTenant = useAppSelector((s) => s.tenant.currentTenant);
+  // Check if user is admin - handle different role formats (admin, super_admin, etc.)
+  const userRole = user?.role?.toLowerCase()?.trim();
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
 
   // Detect agent context from path or query
   const agentMatch = pathname?.match(/^\/dashboard\/agents\/([^/]+)$/);
@@ -37,7 +40,7 @@ export default function DashboardLayout({
     { href: "/dashboard/usage", label: "Usage", icon: BarChart2 },
     { href: "/dashboard/user", label: "Account Settings", icon: UserRoundCog },
     { href: "/dashboard/workspaceSetting/general", label: "Workspace Settings", icon: SlidersHorizontal },
-
+    { href: "/", label: "Trang chủ", icon: Home },
   ];
 
   const agentNav: NavItem[] = currentAgentId
@@ -129,7 +132,16 @@ export default function DashboardLayout({
                   <div className="h-px bg-border" />
                   <div className="p-2">
                     <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors">Dashboard</Link>
-
+                    {isAdmin && (
+                      <Link 
+                        href="/admin/dashboard" 
+                        onClick={() => setMenuOpen(false)} 
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <div className="h-px bg-border my-1" />
                     <button
                       onClick={() => {
