@@ -8,17 +8,39 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
   listKnowledge,
   searchKnowledge,
   createKnowledge,
+  updateKnowledge,
+  getKnowledge,
   deleteKnowledge,
   uploadFiles,
   getUploadProgress,
 } from "@/services/knowledgeService";
 import { listAgents } from "@/services/agentService";
 import { useSearchParams } from "next/navigation";
+import {
+  Search,
+  Plus,
+  Upload,
+  FileText,
+  Database,
+  Trash2,
+  Edit,
+  Filter,
+  X,
+  File,
+  CheckCircle2,
+  Loader2,
+  Calendar,
+  User,
+  Sparkles,
+} from "lucide-react";
 
 export default function KnowledgePage() {
   const params = useSearchParams();
@@ -34,6 +56,14 @@ export default function KnowledgePage() {
   const [agentFilter, setAgentFilter] = useState<string>(lockedAgentId ? lockedAgentId : "all");
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<null | { id: string; title: string }>(null);
+  const [deleting, setDeleting] = useState(false);
+  
+  // edit state
+  const [editingKnowledge, setEditingKnowledge] = useState<any | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editMetadata, setEditMetadata] = useState<string>("{}");
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
   // add (manual)
   const [title, setTitle] = useState("");
@@ -48,6 +78,8 @@ export default function KnowledgePage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<number>(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadAgents = async () => {
@@ -98,42 +130,173 @@ export default function KnowledgePage() {
 
   const onFiles = (fileList: FileList | null) => {
     if (!fileList) return;
-    setFiles((prev) => [...prev, ...Array.from(fileList)]);
+    const newFiles = Array.from(fileList);
+    
+    // Prevent duplicate files by checking name and size
+    setFiles((prev) => {
+      const existingFiles = new Set(prev.map(f => `${f.name}-${f.size}`));
+      const uniqueNewFiles = newFiles.filter(f => !existingFiles.has(`${f.name}-${f.size}`));
+      return [...prev, ...uniqueNewFiles];
+    });
   };
 
+  // Cleanup progress interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   const handleUpload = async () => {
-    if (files.length === 0) return;
+    if (files.length === 0 || uploading) return; // Prevent double upload
+    
+    // Clear any existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    
     setUploading(true);
     setProgress(0);
+    
+    // Store files to upload (prevent changes during upload)
+    const filesToUpload = [...files];
+    
     try {
       const form = new FormData();
-      files.forEach((f) => form.append("files", f));
-      if ((lockedAgentId || agentId) && (lockedAgentId || agentId) !== "none") form.append("agentId", (lockedAgentId as string) || agentId);
+      filesToUpload.forEach((f) => form.append("files", f));
+      if ((lockedAgentId || agentId) && (lockedAgentId || agentId) !== "none") {
+        form.append("agentId", (lockedAgentId as string) || agentId);
+      }
+      
       const res = await uploadFiles(form);
       const sid = res.data?.sessionId || res.sessionId;
+      if (!sid) {
+        throw new Error("No session ID returned from upload");
+      }
+      
       setSessionId(sid);
       toast.success("Upload started");
-      // poll progress
-      const interval = setInterval(async () => {
+      
+      // Track consecutive 404 errors
+      let consecutive404Count = 0;
+      const MAX_404_RETRIES = 5; // Allow 5 retries for 404 (5 seconds)
+      
+      // Poll progress
+      progressIntervalRef.current = setInterval(async () => {
         try {
-          const p = await getUploadProgress(sid);
-          const v = p.progress?.percent || p.data?.progress?.percent || 0;
-          setProgress(v);
-          if (v >= 100) {
-            clearInterval(interval);
-            setUploading(false);
-            toast.success("Upload completed");
-            setFiles([]);
-            load();
+          const progressRes = await getUploadProgress(sid);
+          
+          // Reset 404 counter on success
+          consecutive404Count = 0;
+          
+          // Response structure: { success: true, sessionId: string, progress: UploadProgress[] }
+          const progressArray = progressRes.progress || progressRes.data?.progress || [];
+          
+          if (!Array.isArray(progressArray) || progressArray.length === 0) {
+            // If no progress yet, keep waiting
+            return;
           }
-        } catch {
-          // stop on error
-          clearInterval(interval);
+          
+          // Calculate average percentage from all files
+          const totalPercentage = progressArray.reduce((sum: number, p: any) => {
+            const percent = p.percentage || 0;
+            return sum + Math.max(0, Math.min(100, percent));
+          }, 0);
+          const avgPercentage = progressArray.length > 0 ? totalPercentage / progressArray.length : 0;
+          
+          const finalProgress = Math.min(100, Math.max(0, avgPercentage));
+          setProgress(finalProgress);
+          
+          // Check if all files are completed
+          const allCompleted = progressArray.every((p: any) => 
+            p.status === "completed" || (p.percentage || 0) >= 100
+          );
+          const hasError = progressArray.some((p: any) => p.status === "error");
+          const allProcessing = progressArray.every((p: any) => 
+            p.status === "processing" || p.status === "uploading"
+          );
+          
+          // If all completed or progress is 100%, finish
+          if (allCompleted || (finalProgress >= 100 && !allProcessing)) {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+              progressIntervalRef.current = null;
+            }
+            setUploading(false);
+            setProgress(100);
+            
+            if (hasError) {
+              toast.warning("Upload completed with some errors");
+            } else {
+              toast.success("Upload completed successfully");
+            }
+            
+            // Clear files and reset file input
+            setFiles([]);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+            
+            // Wait a bit for server to process, then refresh and switch to list tab
+            setTimeout(() => {
+              setPage(1); // Reset to first page
+            load();
+              setTab("list"); // Switch to list tab to see new entries
+              // Reset progress after switching tabs
+              setTimeout(() => setProgress(0), 500);
+            }, 1500);
+          }
+        } catch (error: any) {
+          // Handle 404 - session might not be ready yet or was cleaned up
+          if (error?.response?.status === 404) {
+            consecutive404Count++;
+            
+            // If we get too many 404s, assume upload completed and session was cleaned up
+            if (consecutive404Count >= MAX_404_RETRIES) {
+              if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+              }
+              setUploading(false);
+              setProgress(100);
+              toast.success("Upload completed successfully");
+              setFiles([]);
+              
+              // Refresh list after a delay
+              setTimeout(() => {
+                setPage(1);
+                load();
+                setTab("list");
+                setTimeout(() => setProgress(0), 500);
+              }, 1000);
+            } else {
+              // Still retrying, just log
+              console.debug(`Progress session not found (${consecutive404Count}/${MAX_404_RETRIES}), retrying...`);
+            }
+          } else if (error?.response?.status >= 400) {
+            // Other errors - stop polling
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+              progressIntervalRef.current = null;
+            }
           setUploading(false);
+            toast.error("Failed to get upload progress");
+            console.error("Progress polling error:", error);
+          }
         }
-      }, 800);
+      }, 1000); // Poll every 1 second
+      
     } catch (e: any) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
       setUploading(false);
+      setProgress(0);
       toast.error(e?.response?.data?.message || e?.message || "Upload failed");
     }
   };
@@ -162,23 +325,170 @@ export default function KnowledgePage() {
     }
   };
 
+  const handleEdit = async (knowledge: any) => {
+    setEditingKnowledge(knowledge);
+    // Initialize with current data
+    setEditTitle(knowledge.title || "");
+    try {
+      // Try to parse metadata if it's already a string, otherwise stringify
+      const currentMeta = typeof knowledge.metadata === 'string' 
+        ? JSON.parse(knowledge.metadata) 
+        : (knowledge.metadata || {});
+      setEditMetadata(JSON.stringify(currentMeta, null, 2));
+    } catch {
+      setEditMetadata("{}");
+    }
+    
+    setLoadingKnowledge(true);
+    try {
+      // Fetch full knowledge details for latest data
+      const res = await getKnowledge(knowledge.id);
+      const data = res.data || res;
+      setEditTitle(data.title || "");
+      try {
+        const fetchedMeta = typeof data.metadata === 'string'
+          ? JSON.parse(data.metadata)
+          : (data.metadata || {});
+        setEditMetadata(JSON.stringify(fetchedMeta, null, 2));
+      } catch {
+        setEditMetadata("{}");
+      }
+    } catch (e: any) {
+      // If fetch fails, use the data we already have
+      console.warn("Could not fetch knowledge details:", e?.message);
+    } finally {
+      setLoadingKnowledge(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingKnowledge) return;
+    
+    setUpdating(true);
+    try {
+      let meta: any = {};
+      try {
+        meta = editMetadata ? JSON.parse(editMetadata) : {};
+      } catch {
+        toast.error("Metadata must be valid JSON");
+        setUpdating(false);
+        return;
+      }
+      
+      const res = await updateKnowledge(editingKnowledge.id, {
+        title: editTitle,
+        metadata: meta,
+      });
+      
+      if (res.success) {
+        toast.success("Knowledge updated successfully");
+        setEditingKnowledge(null);
+        setEditTitle("");
+        setEditMetadata("{}");
+        load();
+      } else {
+        toast.error(res.message || "Failed to update knowledge");
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || e?.message || "Failed to update knowledge");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const stats = useMemo(() => ({
+    total: total,
+    byAgent: items.filter((k) => k.agentId || k.agent).length,
+    files: items.filter((k) => k.fileName || k.fileType).length,
+  }), [items, total]);
+
   return (
-    <Tabs value={tab} onValueChange={setTab}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Knowledge Base</h1>
-          <TabsList>
-            <TabsTrigger value="list">List Knowledge</TabsTrigger>
-            <TabsTrigger value="add">Add Knowledge</TabsTrigger>
-            <TabsTrigger value="upload">Upload</TabsTrigger>
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <Database className="h-8 w-8 text-primary" />
+              Knowledge Base
+            </h1>
+            <p className="text-muted-foreground mt-1">Manage and organize your knowledge repository</p>
+          </div>
+          <TabsList className="grid w-full sm:w-auto grid-cols-3">
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Browse</span>
+            </TabsTrigger>
+            <TabsTrigger value="add" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create</span>
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              <span className="hidden sm:inline">Upload</span>
+            </TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="list" className="space-y-4">
+        {/* List Tab */}
+        <TabsContent value="list" className="space-y-6 mt-6">
+          {/* Statistics Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Knowledge</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">Items in your base</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">With Agents</CardTitle>
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.byAgent}</div>
+                <p className="text-xs text-muted-foreground">Linked to agents</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Files</CardTitle>
+                <File className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.files}</div>
+                <p className="text-xs text-muted-foreground">Uploaded documents</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Search and Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Search & Filter</CardTitle>
+              <CardDescription>Find knowledge entries by title, content, or agent</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    className="pl-10"
+                    placeholder="Search knowledge by title, filename, or content..."
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                  />
+                </div>
           {!lockedAgentId && (
-            <div className="flex items-center gap-3">
-              <Input className="flex-1" placeholder="Search (title, filename)" value={q} onChange={(e) => setQ(e.target.value)} />
+                  <>
               <Select value={agentFilter} onValueChange={setAgentFilter}>
-                <SelectTrigger className="w-[220px]"><SelectValue placeholder="All agents" /></SelectTrigger>
+                      <SelectTrigger className="w-full sm:w-[220px]">
+                        <Filter className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="All agents" />
+                      </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All agents</SelectItem>
                   {agents.map((a) => (
@@ -187,104 +497,353 @@ export default function KnowledgePage() {
                 </SelectContent>
               </Select>
               <Select value={String(perPage)} onValueChange={(v) => { setPerPage(parseInt(v)); setPage(1); }}>
-                <SelectTrigger className="w-[110px]"><SelectValue placeholder="Per page" /></SelectTrigger>
+                      <SelectTrigger className="w-full sm:w-[140px]">
+                        <SelectValue placeholder="Per page" />
+                      </SelectTrigger>
                 <SelectContent>
-                  {[10,20,30,50].map((n) => (
-                    <SelectItem key={n} value={String(n)}>{n}/page</SelectItem>
+                        {[10, 20, 30, 50].map((n) => (
+                          <SelectItem key={n} value={String(n)}>{n} per page</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          )}
-
-          <div className="rounded-2xl border overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-xs">
-                <tr>
-                  <th className="text-left p-3">Title</th>
-                  <th className="text-left p-3">Agent</th>
-                  <th className="text-left p-3">Preview</th>
-                  <th className="text-left p-3">Created</th>
-                  <th className="text-right p-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td className="p-3" colSpan={5}>Loading...</td></tr>
-                ) : items.length === 0 ? (
-                  <tr><td className="p-3 text-muted-foreground" colSpan={5}>No knowledge entries</td></tr>
-                ) : (
-                  items.map((k) => (
-                    <tr key={k.id} className="border-t">
-                      <td className="p-3 align-top">{k.title || k.fileName || "Untitled"}</td>
-                      <td className="p-3 align-top">{k.agent?.name || k.agentId || "-"}</td>
-                      <td className="p-3 align-top text-muted-foreground">{k.metadata?.content_preview || k.fileType || "-"}</td>
-                      <td className="p-3 align-top">{new Date(k.createdAt || k.created_at).toLocaleString()}</td>
-                      <td className="p-3 align-top text-right">
-                        <Button variant="ghost" size="sm" onClick={() => toast.info("Edit coming soon")}>Edit</Button>
-                        <Button variant="ghost" size="sm" className="text-red-600" onClick={() => setConfirmDelete({ id: k.id, title: k.title })}>Delete</Button>
-                      </td>
-                    </tr>
-                  ))
+                  </>
                 )}
-              </tbody>
-            </table>
-          </div>
+            </div>
+            </CardContent>
+          </Card>
 
+          {/* Knowledge List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Knowledge Entries</CardTitle>
+              <CardDescription>
+                {loading ? "Loading..." : `${items.length} of ${total} entries`}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground">Loading knowledge entries...</p>
+                </div>
+                ) : items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <FileText className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                  <h3 className="text-lg font-semibold mb-2">No knowledge entries found</h3>
+                  <p className="text-sm text-muted-foreground mb-4 max-w-md">
+                    {q.trim() ? "Try adjusting your search terms" : "Get started by creating or uploading knowledge"}
+                  </p>
+                  {!q.trim() && (
+                    <div className="flex gap-2">
+                      <Button onClick={() => setTab("add")} variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Entry
+                      </Button>
+                      <Button onClick={() => setTab("upload")}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Files
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                ) : (
+                <div className="space-y-3">
+                  {items.map((k) => (
+                    <Card key={k.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-start gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <FileText className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-base mb-1 line-clamp-1">
+                                  {k.title || k.fileName || "Untitled"}
+                                </h3>
+                                {k.metadata?.content_preview && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                    {k.metadata.content_preview}
+                                  </p>
+                                )}
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                  {k.agent?.name || k.agentId ? (
+                                    <div className="flex items-center gap-1">
+                                      <User className="h-3 w-3" />
+                                      <span>{k.agent?.name || k.agentId}</span>
+                                    </div>
+                                  ) : null}
+                                  {k.fileType && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {k.fileType.toUpperCase()}
+                                    </Badge>
+                                  )}
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>{new Date(k.createdAt || k.created_at).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 sm:flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(k)}
+                              className="h-9"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              <span className="hidden sm:inline">Edit</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setConfirmDelete({ id: k.id, title: k.title || k.fileName })}
+                              className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              <span className="hidden sm:inline">Delete</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+          </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
           {Math.ceil(total / perPage) > 1 && (
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-              <span className="py-2 px-4 text-sm">{page} / {Math.ceil(total / perPage)}</span>
-              <Button variant="outline" onClick={() => setPage((p) => Math.min(Math.ceil(total / perPage), p + 1))} disabled={page >= Math.ceil(total / perPage)}>Next</Button>
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Previous
+              </Button>
+              <div className="flex items-center gap-2 px-4 py-2 text-sm">
+                <span className="font-medium">Page {page}</span>
+                <span className="text-muted-foreground">of</span>
+                <span className="font-medium">{Math.ceil(total / perPage)}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(Math.ceil(total / perPage), p + 1))}
+                disabled={page >= Math.ceil(total / perPage)}
+              >
+                Next
+              </Button>
             </div>
           )}
 
+          {/* Delete Confirmation Dialog */}
           <Dialog open={!!confirmDelete} onOpenChange={(o) => { if (!o) setConfirmDelete(null); }}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete knowledge</DialogTitle>
+                <DialogTitle className="flex items-center gap-2">
+                  <Trash2 className="h-5 w-5 text-destructive" />
+                  Delete Knowledge Entry
+                </DialogTitle>
               </DialogHeader>
-              <p className="text-sm text-muted-foreground">Are you sure you want to delete {confirmDelete?.title || "this item"}?</p>
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  Are you sure you want to delete <span className="font-semibold text-foreground">"{confirmDelete?.title || "this item"}"</span>? This action cannot be undone.
+                </p>
+              </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setConfirmDelete(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setConfirmDelete(null)} disabled={deleting}>Cancel</Button>
                 <Button
                   variant="destructive"
+                  disabled={deleting}
                   onClick={async () => {
                     if (!confirmDelete) return;
+                    
+                    const deleteId = confirmDelete.id;
+                    const deleteTitle = confirmDelete.title;
+                    
+                    setDeleting(true);
+                    
+                    // Optimistic update: remove from UI immediately
+                    setItems((prev) => prev.filter((item) => item.id !== deleteId));
+                    setTotal((prev) => Math.max(0, prev - 1));
+                    setConfirmDelete(null);
+                    
+                    // Show toast immediately
+                    toast.success("Knowledge entry deleted successfully");
+                    
+                    // Delete in background
                     try {
-                      const res = await deleteKnowledge(confirmDelete.id);
-                      if (res.success) {
-                        toast.success("Knowledge deleted");
-                        setConfirmDelete(null);
-                        load();
-                      } else {
+                      const res = await deleteKnowledge(deleteId);
+                      if (!res.success) {
+                        // If failed, reload to restore state
                         toast.error(res.message || "Failed to delete");
+                        load();
                       }
                     } catch (e: any) {
+                      // If failed, reload to restore state
                       toast.error(e?.response?.data?.message || e?.message || "Failed to delete");
+                      load();
+                    } finally {
+                      setDeleting(false);
                     }
                   }}
                 >
+                  {deleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4 mr-2" />
                   Delete
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Dialog */}
+          <Dialog open={!!editingKnowledge} onOpenChange={(o) => { if (!o) { setEditingKnowledge(null); setEditTitle(""); setEditMetadata("{}"); } }}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Edit className="h-5 w-5 text-primary" />
+                  Edit Knowledge Entry
+                </DialogTitle>
+              </DialogHeader>
+              {loadingKnowledge ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading knowledge details...</span>
+                </div>
+              ) : (
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-title">Title *</Label>
+                    <Input
+                      id="edit-title"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Enter knowledge title"
+                    />
+                  </div>
+                  {editingKnowledge?.agent?.name || editingKnowledge?.agentId ? (
+                    <div className="space-y-2">
+                      <Label>Agent</Label>
+                      <Input
+                        value={editingKnowledge.agent?.name || editingKnowledge.agentId || "-"}
+                        readOnly
+                        className="bg-muted"
+                      />
+                      <p className="text-xs text-muted-foreground">Agent cannot be changed after creation</p>
+                    </div>
+                  ) : null}
+                  {editingKnowledge?.fileName && (
+                    <div className="space-y-2">
+                      <Label>File</Label>
+                      <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                        <File className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{editingKnowledge.fileName}</span>
+                        {editingKnowledge.fileType && (
+                          <Badge variant="outline" className="ml-auto">
+                            {editingKnowledge.fileType.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">File content cannot be edited. Only title and metadata can be modified.</p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-metadata">Metadata (JSON)</Label>
+                    <Textarea
+                      id="edit-metadata"
+                      rows={8}
+                      value={editMetadata}
+                      onChange={(e) => setEditMetadata(e.target.value)}
+                      placeholder='{"tags": ["finance", "important"], "source": "manual", "category": "docs"}'
+                      className="font-mono text-sm resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Provide valid JSON metadata. This will be stored with your knowledge entry.
+                    </p>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingKnowledge(null);
+                    setEditTitle("");
+                    setEditMetadata("{}");
+                  }}
+                  disabled={updating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdate}
+                  disabled={updating || loadingKnowledge || !editTitle.trim()}
+                >
+                  {updating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Update
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </TabsContent>
 
-        <TabsContent value="add" className="space-y-4">
+        {/* Add Tab */}
+        <TabsContent value="add" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Create New Knowledge Entry
+              </CardTitle>
+              <CardDescription>
+                Manually create a knowledge entry with title and metadata
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Title</Label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter knowledge title"
+                  />
             </div>
             <div className="space-y-2">
-              <Label>Agent {lockedAgentId ? "(locked)" : "(optional)"}</Label>
+                  <Label htmlFor="agent">
+                    Agent {lockedAgentId ? "(locked)" : "(optional)"}
+                  </Label>
               {lockedAgentId ? (
-                <Input value={lockedAgentId} readOnly />
+                    <Input value={lockedAgentId} readOnly className="bg-muted" />
               ) : (
                 <Select value={agentId} onValueChange={setAgentId}>
-                  <SelectTrigger><SelectValue placeholder="No agent" /></SelectTrigger>
+                      <SelectTrigger id="agent">
+                        <SelectValue placeholder="Select an agent (optional)" />
+                      </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No agent</SelectItem>
                     {agents.map((a) => (
@@ -296,42 +855,130 @@ export default function KnowledgePage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Content (optional)</Label>
-            <Textarea rows={8} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Large text content (optional)" />
+                <Label htmlFor="content">Content (optional)</Label>
+                <Textarea
+                  id="content"
+                  rows={6}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Enter knowledge content (optional). For large content, use the Upload tab for better chunking."
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Note: For large documents, use the Upload tab for automatic chunking and processing.
+                </p>
           </div>
           <div className="space-y-2">
-            <Label>Metadata (JSON)</Label>
-            <Textarea rows={6} value={metadata} onChange={(e) => setMetadata(e.target.value)} placeholder='{"tags":["finance"],"source":"manual"}' />
-            <div className="text-xs text-muted-foreground">Provide valid JSON. We store metadata; content is recommended via Upload for chunking.</div>
+                <Label htmlFor="metadata">Metadata (JSON)</Label>
+                <Textarea
+                  id="metadata"
+                  rows={5}
+                  value={metadata}
+                  onChange={(e) => setMetadata(e.target.value)}
+                  placeholder='{"tags": ["finance", "important"], "source": "manual", "category": "docs"}'
+                  className="font-mono text-sm resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Provide valid JSON metadata. This will be stored with your knowledge entry.
+                </p>
           </div>
-          <div className="flex justify-end">
-            <Button onClick={handleCreate} disabled={submitting}>{submitting ? "Submitting..." : "Create"}</Button>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => {
+                  setTitle("");
+                  setContent("");
+                  setMetadata("{}");
+                }}>
+                  Clear
+                </Button>
+                <Button onClick={handleCreate} disabled={submitting || !title.trim()}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Create Entry
+                    </>
+                  )}
+                </Button>
           </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        <TabsContent value="upload" className="space-y-4">
+        {/* Upload Tab */}
+        <TabsContent value="upload" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload Files
+              </CardTitle>
+              <CardDescription>
+                Upload documents to automatically process and chunk them into your knowledge base
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Files</Label>
-              <Input type="file" multiple onChange={(e) => onFiles(e.target.files)} accept=".pdf,.doc,.docx,.txt,.md,.mdx" />
+                  <Label htmlFor="files">Select Files</Label>
+                  <div className="relative">
+                    <Input
+                      ref={fileInputRef}
+                      id="files"
+                      type="file"
+                      multiple
+                      onChange={(e) => onFiles(e.target.files)}
+                      accept=".pdf,.doc,.docx,.txt,.md,.mdx"
+                      className="cursor-pointer"
+                    />
+                  </div>
               {files.length > 0 && (
-                <div className="rounded-md border p-3 text-sm">
-                  <div className="font-medium mb-2">Selected files</div>
-                  <ul className="list-disc pl-5">
+                    <Card className="mt-3">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Selected Files ({files.length})</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
                     {files.map((f, i) => (
-                      <li key={i}>{f.name} ({Math.round(f.size / 1024)} KB)</li>
-                    ))}
-                  </ul>
+                            <div key={i} className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm truncate">{f.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">
+                                  {(f.size / 1024).toFixed(1)} KB
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => setFiles(files.filter((_, idx) => idx !== i))}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                 </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
               )}
             </div>
             <div className="space-y-2">
-              <Label>Agent {lockedAgentId ? "(locked)" : "(optional)"}</Label>
+                  <Label htmlFor="upload-agent">
+                    Agent {lockedAgentId ? "(locked)" : "(optional)"}
+                  </Label>
               {lockedAgentId ? (
-                <Input value={lockedAgentId} readOnly />
+                    <Input value={lockedAgentId} readOnly className="bg-muted" />
               ) : (
                 <Select value={agentId} onValueChange={setAgentId}>
-                  <SelectTrigger><SelectValue placeholder="No agent" /></SelectTrigger>
+                      <SelectTrigger id="upload-agent">
+                        <SelectValue placeholder="Select an agent (optional)" />
+                      </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No agent</SelectItem>
                     {agents.map((a) => (
@@ -343,19 +990,71 @@ export default function KnowledgePage() {
             </div>
           </div>
 
+              {/* Upload Progress */}
+              {(uploading || progress > 0) && (
+                <Card>
+                  <CardContent className="pt-6">
           <div className="space-y-2">
-            <div className="text-xs text-muted-foreground">Formats: PDF, DOCX, TXT, MD. Multiple files supported; processing continues if one fails.</div>
-            <div className="h-2 w-full rounded bg-muted">
-              <div className="h-2 rounded bg-primary" style={{ width: `${progress}%`, transition: "width .2s" }} />
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Upload Progress</span>
+                        <span className="text-muted-foreground">{Math.floor(progress)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                      {uploading && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Processing files...
+                        </p>
+                      )}
             </div>
-            <div className="text-xs text-muted-foreground">{uploading ? `Uploading... ${Math.floor(progress)}%` : progress > 0 ? `${Math.floor(progress)}%` : ""}</div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center bg-muted/20">
+                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm font-medium mb-1">Supported Formats</p>
+                <p className="text-xs text-muted-foreground">
+                  PDF, DOC, DOCX, TXT, MD, MDX. Multiple files supported. Processing continues if one fails.
+                </p>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => { setFiles([]); setProgress(0); }}>Clear</Button>
-            <Button onClick={handleUpload} disabled={uploading || files.length === 0}>{uploading ? "Uploading..." : "Upload"}</Button>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setFiles([]);
+                    setProgress(0);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={uploading}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Clear
+                </Button>
+                <Button
+                  onClick={handleUpload}
+                  disabled={uploading || files.length === 0}
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload {files.length > 0 && `(${files.length})`}
+                    </>
+                  )}
+                </Button>
           </div>
+            </CardContent>
+          </Card>
         </TabsContent>
+      </Tabs>
       </div>
-    </Tabs>
   );
 }
