@@ -7,8 +7,28 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { logout as apiLogout, clearTokens } from "@/services/authUserService";
 import UserAvatar from "@/components/user-avatar";
-import { Bot, BarChart2, UserRoundCog, SlidersHorizontal, Shield, Book, MessageSquare, ArrowLeft, LogOut, LayoutDashboard, Home } from "lucide-react";
-import { Code2 } from "lucide-react";
+import { 
+  Bot, 
+  BarChart2, 
+  UserRoundCog, 
+  SlidersHorizontal, 
+  Shield, 
+  Book, 
+  MessageSquare, 
+  ArrowLeft, 
+  LogOut, 
+  LayoutDashboard, 
+  Home,
+  Code2,
+  Database,
+  Settings,
+  Users,
+  TrendingUp,
+  FileText,
+  Sparkles,
+  Menu,
+  X,
+} from "lucide-react";
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -35,41 +55,202 @@ export default function DashboardLayout({
   const currentAgentId = agentIdFromPath || agentIdFromQuery;
   const currentTab = searchParams?.get("tab") || "config";
 
-  const defaultNav: NavItem[] = [
+  // Main navigation (when not in agent context)
+  const mainNav: NavItem[] = [
     { href: "/dashboard", label: "Agents", icon: Bot },
+    { href: "/dashboard/knowledge", label: "Knowledge", icon: Database },
+    { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
     { href: "/dashboard/usage", label: "Usage", icon: BarChart2 },
-    { href: "/dashboard/user", label: "Account Settings", icon: UserRoundCog },
-    { href: "/dashboard/workspaceSetting/general", label: "Workspace Settings", icon: SlidersHorizontal },
-    { href: "/", label: "Trang chủ", icon: Home },
   ];
 
-  const agentNav: NavItem[] = currentAgentId
+  // Settings & Account
+  const settingsNav: NavItem[] = [
+    { href: "/dashboard/user", label: "Account", icon: UserRoundCog },
+    { href: "/dashboard/workspaceSetting/general", label: "Workspace", icon: Settings },
+  ];
+
+  // Quick links
+  const quickLinks: NavItem[] = [
+    { href: "/", label: "Home", icon: Home },
+  ];
+
+  // Agent-specific navigation (when in agent context)
+  // Ordered: Chat → Knowledge → Config → Analytics
+  const agentMainNav: NavItem[] = currentAgentId
     ? [
-        { href: `/dashboard/agents/${currentAgentId}?tab=config`, label: "Config", icon: SlidersHorizontal },
-        { href: `/dashboard/agents/${currentAgentId}?tab=api`, label: "API & Security", icon: Shield },
-        { href: `/dashboard/agents/${currentAgentId}?tab=embed`, label: "Embed Widget", icon: Code2 },
-        { href: `/dashboard/knowledge?agentId=${currentAgentId}`, label: "Knowledge", icon: Book },
-        { href: `/dashboard/analytics?agentId=${currentAgentId}`, label: "Analytics", icon: BarChart2 },
+        // Step 1: Test your agent
         { href: `/dashboard/chat?agentId=${currentAgentId}`, label: "Chat", icon: MessageSquare },
+        // Step 2: Add knowledge to your agent
+        { href: `/dashboard/knowledge?agentId=${currentAgentId}`, label: "Knowledge", icon: Database },
+        // Step 3: Configure your agent
+        { href: `/dashboard/agents/${currentAgentId}?tab=config`, label: "Config", icon: SlidersHorizontal },
+        // Step 4: Monitor performance
+        { href: `/dashboard/analytics?agentId=${currentAgentId}`, label: "Analytics", icon: BarChart2 },
+      ]
+    : [];
+
+  const agentAdvancedNav: NavItem[] = currentAgentId
+    ? [
+        // Step 5: Embed in your website
+        { href: `/dashboard/agents/${currentAgentId}?tab=embed`, label: "Embed Widget", icon: Code2 },
+        // Step 6: Integrate via API
+        { href: `/dashboard/agents/${currentAgentId}?tab=api`, label: "API & Security", icon: Shield },
+      ]
+    : [];
+
+  const agentBackNav: NavItem[] = currentAgentId
+    ? [
         { href: "/dashboard", label: "Back to Agents", icon: ArrowLeft },
       ]
     : [];
 
-  const nav = currentAgentId ? agentNav : defaultNav;
-
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
+      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
+        setSidebarOpen(false);
+      }
     };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
+
+  // Close sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Helper function to check if nav item is active
+  const isNavItemActive = (item: NavItem): boolean => {
+    const basePath = item.href.split("?")[0];
+    const hrefUrl = new URL(item.href, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+    const hrefTab = hrefUrl.searchParams.get("tab");
+    const hrefAgentId = hrefUrl.searchParams.get("agentId");
+
+    if (hrefTab) {
+      return pathname === `/dashboard/agents/${currentAgentId}` && currentTab === hrefTab;
+    } else if (hrefAgentId) {
+      return pathname === basePath && currentAgentId === hrefAgentId;
+    } else {
+      // Exact match for root paths
+      if (basePath === "/" || basePath === "/dashboard") {
+        return pathname === basePath;
+      }
+      // For other paths, check exact match or if pathname starts with basePath + "/"
+      return pathname === basePath || (pathname?.startsWith(basePath + "/") && basePath !== "/");
+    }
+  };
+
+  // Render navigation item
+  const renderNavItem = (item: NavItem, onClick?: () => void) => {
+    const isActive = isNavItemActive(item);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onClick}
+        aria-current={isActive ? "page" : undefined}
+        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+          isActive 
+            ? "bg-primary/10 text-primary border border-primary/20 shadow-sm" 
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        }`}
+      >
+        {Icon ? <Icon className="h-4 w-4 shrink-0" /> : null}
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
+
+  // Render navigation section
+  const renderNavSection = () => (
+    <>
+      {/* Main Navigation */}
+      <div className="space-y-4">
+        {currentAgentId ? (
+          <>
+            <div>
+              <div className="px-3 mb-2">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Agent</h3>
+              </div>
+              <div className="space-y-1">
+                {agentMainNav.map((item) => renderNavItem(item, () => setSidebarOpen(false)))}
+              </div>
+            </div>
+            
+            {agentAdvancedNav.length > 0 && (
+              <div>
+                <div className="px-3 mb-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Integration</h3>
+                </div>
+                <div className="space-y-1">
+                  {agentAdvancedNav.map((item) => renderNavItem(item, () => setSidebarOpen(false)))}
+                </div>
+              </div>
+            )}
+
+            {/* Back to Agents - Moved to bottom */}
+            {agentBackNav.length > 0 && (
+              <div className="pt-2 border-t">
+                <div className="space-y-1">
+                  {agentBackNav.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200"
+                      >
+                        {Icon ? <Icon className="h-4 w-4" /> : null}
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="space-y-1">
+              {mainNav.map((item) => renderNavItem(item, () => setSidebarOpen(false)))}
+            </div>
+
+            {/* Settings Section */}
+            {settingsNav.length > 0 && (
+              <div className="pt-2 border-t">
+                <div className="px-3 mb-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Settings</h3>
+                </div>
+                <div className="space-y-1">
+                  {settingsNav.map((item) => renderNavItem(item, () => setSidebarOpen(false)))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick Links */}
+            {quickLinks.length > 0 && (
+              <div className="pt-2 border-t">
+                <div className="space-y-1">
+                  {quickLinks.map((item) => renderNavItem(item, () => setSidebarOpen(false)))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -97,24 +278,47 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex h-12 items-center justify-between px-4">
+        <div className="mx-auto flex h-14 items-center justify-between px-4 md:px-6">
           {/* Left: Logo + workspace name placeholder */}
           <div className="flex items-center gap-3">
-            <Link href="/dashboard">
-              <img src="/logoGobal.png" alt="LuxeWear" className="h-6 w-auto hover:opacity-80 transition-opacity" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="Toggle sidebar"
+            >
+              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+            <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <img src="/logoGobal.png" alt="LuxeWear" className="h-7 w-auto" />
+              <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">LuxeWear</span>
+                <span className="text-muted-foreground/60">/</span>
+                <span className="text-muted-foreground">Dashboard</span>
+              </div>
             </Link>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">LuxeWear</span>
-              <span>/</span>
-              <span>Dashboard</span>
-            </div>
           </div>
 
           {/* Right: quick links */}
-          <nav className="flex items-center gap-5 text-sm font-medium">
-            <TenantSwitcher />
-            <Link href="/docs/user-guides" className="hover:text-foreground/80 transition-colors">Docs</Link>
-            <Link href="/dashboard/pages/settings" className="hover:text-foreground/80 transition-colors">Settings</Link>
+          <nav className="flex items-center gap-3 md:gap-4 text-sm font-medium">
+            <div className="hidden sm:block">
+              <TenantSwitcher />
+            </div>
+            <Link 
+              href="/docs/user-guides" 
+              className="hidden md:inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              <span>Docs</span>
+            </Link>
+            <Link 
+              href="/dashboard/pages/settings" 
+              className="hidden md:inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
+            </Link>
             <div className="relative" ref={menuRef}>
               <button
                 className="overflow-hidden rounded-full"
@@ -161,50 +365,51 @@ export default function DashboardLayout({
         </div>
       </header>
 
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <aside 
+            ref={sidebarRef}
+            className="fixed left-0 top-0 h-full w-64 bg-background border-r shadow-xl animate-in slide-in-from-left duration-300"
+          >
+            <div className="flex items-center justify-between p-4 border-b">
+              <Link href="/dashboard" onClick={() => setSidebarOpen(false)}>
+                <img src="/logoGobal.png" alt="LuxeWear" className="h-6 w-auto" />
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close sidebar"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <nav className="p-4 space-y-6 overflow-y-auto h-[calc(100vh-4rem)]">
+              {renderNavSection()}
+            </nav>
+          </aside>
+        </div>
+      )}
+
       {/* Body with Sidebar */}
       <div className="mx-auto flex">
-        {/* Sidebar */}
-        <aside className="hidden md:block w-56 shrink-0 border-r bg-background/50">
-          <nav className="p-4 space-y-1">
-            {nav.map((item) => {
-              const basePath = item.href.split("?")[0];
-              const hrefUrl = new URL(item.href, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-              const hrefTab = hrefUrl.searchParams.get("tab");
-              const hrefAgentId = hrefUrl.searchParams.get("agentId");
-
-              let isActive = false;
-              if (hrefTab) {
-                // inside agent details tabs
-                isActive = pathname === `/dashboard/agents/${currentAgentId}` && currentTab === hrefTab;
-              } else if (hrefAgentId) {
-                // standalone pages with agentId in query
-                isActive = pathname === basePath && currentAgentId === hrefAgentId;
-              } else {
-                // normal pages
-                isActive = pathname === basePath;
-              }
-
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-muted focus:bg-muted focus:text-foreground ${
-                    isActive ? "bg-muted text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {Icon ? <Icon className="h-4 w-4" /> : null}
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:block w-64 shrink-0 border-r bg-background/50">
+          <nav className="p-4">
+            {renderNavSection()}
           </nav>
         </aside>
 
         {/* Content */}
-        <main key={currentTenant || 'no-tenant'} className="flex-1 px-4 py-6 transition-opacity duration-200">
-          {children}
+        <main key={currentTenant || 'no-tenant'} className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
       </div>
 

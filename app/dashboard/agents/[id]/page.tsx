@@ -11,10 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getAgent, updateAgent, deleteAgent, regenerateApiKey, togglePublic } from "@/services/agentService";
 import { getAgentAnalytics } from "@/services/analyticsService";
 import EmbedChatWidget from "@/components/dashboard/EmbedChatWidget";
+import { Copy, Check, Info, AlertCircle, ExternalLink, Code2, Globe, FileCode } from "lucide-react";
 
 export default function AgentDetailsPage() {
   const params = useParams();
@@ -43,6 +46,7 @@ export default function AgentDetailsPage() {
   const [instructions, setInstructions] = useState<string>("");
 
   const [analytics, setAnalytics] = useState<any | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -407,30 +411,269 @@ async function chatWithAgent(message){
       )}
 
       {currentTab === "embed" && (
-        <div className="space-y-4">
-          <div className="rounded-2xl border p-4 space-y-3">
-            <div className="text-sm font-medium">Embed Chat Widget</div>
-            <div className="text-xs text-muted-foreground">Use this iframe to embed the chat widget into any website. Ensure this agent is public and allowed origins are configured.</div>
-            <div className="rounded-lg overflow-hidden border">
-              <iframe
-                src={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}`}
-                title="Agent Chat Widget"
-                className="w-full h-[520px]"
-                allow="microphone"
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="text-xs font-medium">Embed code</div>
-              <pre className="rounded-md border p-3 text-xs whitespace-pre-wrap break-words">{`<div style="position:relative;width:380px;height:600px;border-radius:12px;overflow:hidden;">
+        <div className="space-y-6">
+          {/* Requirements Alert */}
+          {(!isPublic || allowedOrigins.length === 0) && (
+            <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900">
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5" />
+                  <div className="flex-1">
+                    <CardTitle className="text-base text-amber-900 dark:text-amber-100">Cấu hình cần thiết</CardTitle>
+                    <CardDescription className="text-amber-700 dark:text-amber-300 mt-1">
+                      Để sử dụng Embed Widget, bạn cần:
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-amber-800 dark:text-amber-200">
+                {!isPublic && (
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                    <span>Bật chế độ Public cho agent này (trong tab API & Security)</span>
+                  </div>
+                )}
+                {allowedOrigins.length === 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-600"></span>
+                    <span>Thêm domain của website vào Allowed Origins (trong tab API & Security)</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Preview Widget
+              </CardTitle>
+              <CardDescription>
+                Xem trước widget sẽ hiển thị trên website của bạn
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg overflow-hidden border bg-muted/30">
+                <iframe
+                  src={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}`}
+                  title="Agent Chat Widget"
+                  className="w-full h-[520px]"
+                  allow="microphone"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Integration Guide */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code2 className="h-5 w-5" />
+                Hướng dẫn tích hợp
+              </CardTitle>
+              <CardDescription>
+                Chọn phương pháp phù hợp với website của bạn
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="iframe" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="iframe">Iframe Embed</TabsTrigger>
+                  <TabsTrigger value="script">Script Tag</TabsTrigger>
+                </TabsList>
+
+                {/* Iframe Method */}
+                <TabsContent value="iframe" className="space-y-4 mt-4">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Phương pháp 1: Iframe (Đơn giản nhất)</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Dán code này vào bất kỳ đâu trong HTML của website bạn. Phù hợp cho WordPress, HTML tĩnh, hoặc bất kỳ nền tảng nào.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Code để copy:</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const code = `<div style="position:relative;width:100%;max-width:380px;height:600px;border-radius:12px;overflow:hidden;margin:0 auto;">
   <iframe
-    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}?apiKey=YOUR_API_KEY"
+    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
     style="width:100%;height:100%;border:none;"
     allow="microphone"
     title="AI Chat Assistant"
   ></iframe>
-</div>`}</pre>
-            </div>
-          </div>
+</div>`;
+                            navigator.clipboard.writeText(code);
+                            setCopiedCode("iframe");
+                            toast.success("Đã copy code!");
+                            setTimeout(() => setCopiedCode(null), 2000);
+                          }}
+                        >
+                          {copiedCode === "iframe" ? (
+                            <Check className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Copy className="h-4 w-4 mr-2" />
+                          )}
+                          Copy Code
+                        </Button>
+                      </div>
+                      <pre className="rounded-md border bg-muted/50 p-4 text-xs overflow-x-auto">
+                        <code>{`<div style="position:relative;width:100%;max-width:380px;height:600px;border-radius:12px;overflow:hidden;margin:0 auto;">
+  <iframe
+    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
+    style="width:100%;height:100%;border:none;"
+    allow="microphone"
+    title="AI Chat Assistant"
+  ></iframe>
+</div>`}</code>
+                      </pre>
+                    </div>
+
+                    <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-4 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                        <div className="text-sm text-blue-900 dark:text-blue-100 space-y-1">
+                          <p className="font-medium">Cách sử dụng:</p>
+                          <ol className="list-decimal list-inside space-y-1 ml-2">
+                            <li>Copy code ở trên</li>
+                            <li>Dán vào vị trí bạn muốn hiển thị widget trong HTML</li>
+                            <li>Điều chỉnh width và height nếu cần (mặc định: 380px x 600px)</li>
+                            <li>Lưu và publish website</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Script Tag Method */}
+                <TabsContent value="script" className="space-y-4 mt-4">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Phương pháp 2: Script Tag (Floating Widget)</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Thêm script này vào cuối trang (trước thẻ &lt;/body&gt;) để tạo widget nổi ở góc màn hình.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Code để copy:</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const code = `<script>
+  (function() {
+    var container = document.createElement('div');
+    container.id = 'luxewear-chat-widget';
+    container.style.cssText = 'position:fixed;bottom:20px;right:20px;width:380px;height:600px;z-index:9999;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    var iframe = document.createElement('iframe');
+    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
+    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+    iframe.setAttribute('allow', 'microphone');
+    iframe.setAttribute('title', 'AI Chat Assistant');
+    container.appendChild(iframe);
+    document.body.appendChild(container);
+  })();
+</script>`;
+                            navigator.clipboard.writeText(code);
+                            setCopiedCode("script");
+                            toast.success("Đã copy code!");
+                            setTimeout(() => setCopiedCode(null), 2000);
+                          }}
+                        >
+                          {copiedCode === "script" ? (
+                            <Check className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Copy className="h-4 w-4 mr-2" />
+                          )}
+                          Copy Code
+                        </Button>
+                      </div>
+                      <pre className="rounded-md border bg-muted/50 p-4 text-xs overflow-x-auto">
+                        <code>{`<script>
+  (function() {
+    var container = document.createElement('div');
+    container.id = 'luxewear-chat-widget';
+    container.style.cssText = 'position:fixed;bottom:20px;right:20px;width:380px;height:600px;z-index:9999;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+    var iframe = document.createElement('iframe');
+    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
+    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+    iframe.setAttribute('allow', 'microphone');
+    iframe.setAttribute('title', 'AI Chat Assistant');
+    container.appendChild(iframe);
+    document.body.appendChild(container);
+  })();
+</script>`}</code>
+                      </pre>
+                    </div>
+
+                    <div className="rounded-lg border bg-blue-50 dark:bg-blue-950/20 p-4 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                        <div className="text-sm text-blue-900 dark:text-blue-100 space-y-1">
+                          <p className="font-medium">Cách sử dụng:</p>
+                          <ol className="list-decimal list-inside space-y-1 ml-2">
+                            <li>Copy code ở trên</li>
+                            <li>Dán vào cuối trang HTML, ngay trước thẻ &lt;/body&gt;</li>
+                            <li>Widget sẽ tự động xuất hiện ở góc dưới bên phải</li>
+                            <li>Bạn có thể tùy chỉnh vị trí bằng cách thay đổi bottom và right trong CSS</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Additional Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileCode className="h-5 w-5" />
+                Thông tin bổ sung
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div>
+                <h4 className="font-semibold mb-2">API Key</h4>
+                <p className="text-muted-foreground">
+                  {apiKey ? (
+                    <>API Key của bạn: <code className="bg-muted px-1.5 py-0.5 rounded text-xs">{apiKey}</code></>
+                  ) : (
+                    "Bạn cần tạo API Key trong tab API & Security để sử dụng widget."
+                  )}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Allowed Origins</h4>
+                <p className="text-muted-foreground mb-2">
+                  Đảm bảo bạn đã thêm domain của website vào danh sách Allowed Origins. Ví dụ:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
+                  <li><code>https://yourdomain.com</code></li>
+                  <li><code>https://www.yourdomain.com</code></li>
+                  <li><code>http://localhost:3000</code> (cho development)</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Tùy chỉnh kích thước</h4>
+                <p className="text-muted-foreground">
+                  Bạn có thể thay đổi width và height trong code để phù hợp với thiết kế website của mình. 
+                  Kích thước mặc định là 380px x 600px.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
