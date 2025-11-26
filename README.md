@@ -88,7 +88,8 @@ client-luxe-wear-ai/
 ├── app/                      # Next.js App Router pages + route groups
 │   ├── (guest)/auth          # marketing + public auth flows
 │   ├── (user)/docs           # static docs pages + MDX scaffold
-│   └── dashboard             # authenticated routes + nested layouts
+│   ├── dashboard             # authenticated user dashboard + nested layouts
+│   └── (admin)/admin         # admin dashboard & tools (users, tenants, agents, analytics)
 ├── components/
 │   ├── ui/                   # shadcn-style primitives
 │   ├── shared/               # cross-domain widgets (EmptyState, Toast, etc.)
@@ -104,6 +105,12 @@ client-luxe-wear-ai/
 
 Keep feature-specific components close to their domain folder and move reusable widgets into `components/shared` or `components/ui`.
 
+### Admin area
+
+- Routes for the admin panel live under `app/(admin)/admin/dashboard/*` and `app/(admin)/admin/settings` and are wrapped by `app/(admin)/layout.tsx` (which provides `AdminHeader` + `AdminSidebar` shell).
+- Access to admin is controlled by the `role` field on the authenticated user (e.g. `admin`, `super_admin`); the header avatar menu in the main dashboard shows an “Admin Dashboard” link only when `role` matches.
+- When wiring a new admin screen, keep it inside `app/(admin)/admin/dashboard/<feature>/page.tsx` and reuse the same UI primitives (`components/ui/*`, `components/shared/*`, `components/admin/*`) so styling stays consistent.
+
 ---
 
 ## Coding standards
@@ -118,7 +125,8 @@ Keep feature-specific components close to their domain folder and move reusable 
 
 ## Helpful references
 
-- `CLIENT_IMPROVEMENT_CHECKLIST.md`: ordered backlog for the client
+- `CLIENT_IMPROVEMENT_CHECKLIST.md`: ordered backlog cho khu vực client (user)
+- `ADMIN_IMPROVEMENT_CHECKLIST.md`: checklist cải thiện UI/UX & DX cho khu vực admin
 - `CLIENT_FEATURES.md`: canonical feature matrix for every screen
 - `TENANT_IMPLEMENTATION_GUIDE.md`: UX + state expectations for multi-tenant flows
 - `server-luxe-wear-ai/README.md`: backend setup, endpoints, and local dev scripts

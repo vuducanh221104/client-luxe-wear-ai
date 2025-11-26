@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, BookOpen, FileCode, RefreshCcw, BookMarked, LogOut, Shield } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/store";
@@ -8,6 +9,7 @@ import { logout as apiLogout, clearTokens } from "@/services/authUserService";
 import { resetTenantState } from "@/store/tenantSlice";
 import { useRouter } from "next/navigation";
 import UserAvatar from "@/components/user-avatar";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -24,7 +26,17 @@ export default function Header() {
   const isAuthenticated = !!user;
   // Check if user is admin - handle different role formats (admin, super_admin, etc.)
   const userRole = user?.role?.toLowerCase()?.trim();
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isAdmin = userRole === "admin" || userRole === "super_admin";
+  const roleLabel =
+    userRole === "super_admin"
+      ? "Super admin"
+      : userRole === "owner"
+      ? "Owner"
+      : userRole === "admin"
+      ? "Admin"
+      : userRole === "member"
+      ? "Member"
+      : undefined;
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -65,7 +77,14 @@ export default function Header() {
       <div className="container mx-auto h-14 flex items-center justify-between px-4">
         {/* Left: Logo */}
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <img src="/logoGobal.png" alt="Logo" className="h-11 w-auto" />
+          <Image
+            src="/logoGobal.png"
+            alt="Logo"
+            width={44}
+            height={44}
+            className="h-11 w-auto"
+            priority
+          />
         </Link>
 
         {/* Center: Nav */}
@@ -164,8 +183,21 @@ export default function Header() {
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-72 rounded-2xl border bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                     <div className="p-4">
-                      <div className="text-base font-semibold">{user?.name || "User"}</div>
-                      <div className="text-sm text-muted-foreground">{user?.email || ""}</div>
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-base font-semibold">
+                            {user?.name || "User"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {user?.email || ""}
+                          </div>
+                        </div>
+                        {roleLabel && (
+                          <Badge variant={isAdmin ? "default" : "outline"} className="text-xs px-2 py-0.5">
+                            {roleLabel}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <div className="h-px bg-border" />
                     <div className="p-2">

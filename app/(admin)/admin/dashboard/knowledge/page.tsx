@@ -1,22 +1,43 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, Tag, Space } from 'antd';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { adminListAllKnowledge, adminGetKnowledgeStats, adminForceDeleteKnowledge, adminGetKnowledge } from '@/services/knowledgeService';
-import { toast } from 'sonner';
-import { 
-  Eye, 
-  Trash2, 
-  RefreshCw, 
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tag } from "antd";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  adminListAllKnowledge,
+  adminGetKnowledgeStats,
+  adminForceDeleteKnowledge,
+  adminGetKnowledge,
+} from "@/services/knowledgeService";
+import { toast } from "sonner";
+import {
+  Eye,
+  Trash2,
+  RefreshCw,
   Database,
   Search,
-  FileText
-} from 'lucide-react';
+  FileText,
+} from "lucide-react";
+import {
+  AdminActionState,
+  AdminConfirmActionDialog,
+} from "@/components/admin/AdminConfirmActionDialog";
 
 export default function AdminKnowledgePage() {
   const [data, setData] = useState<any[]>([]);
@@ -24,11 +45,13 @@ export default function AdminKnowledgePage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
-  const [query, setQuery] = useState('');
-  const [agentFilter, setAgentFilter] = useState<string>('all');
+  const [query, setQuery] = useState("");
+  const [agentFilter, setAgentFilter] = useState<string>("all");
   const [selectedKnowledge, setSelectedKnowledge] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [stats, setStats] = useState<any>(null);
+  const [confirmAction, setConfirmAction] =
+    useState<AdminActionState<any> | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -75,14 +98,14 @@ export default function AdminKnowledgePage() {
       const statsBody = (statsRes as any)?.data || statsRes;
       setStats(statsBody);
     } catch (e: any) {
-      console.error('Failed to load knowledge:', e);
+      console.error("Failed to load knowledge:", e);
       // If API fails, try to show empty state gracefully
       if (e?.response?.status === 404 || e?.response?.status === 500) {
         setData([]);
         setTotal(0);
         // Don't show error toast for 404/500, just show empty state
       } else {
-        toast.error(e?.response?.data?.message || 'Failed to load knowledge');
+        toast.error(e?.response?.data?.message || "Failed to load knowledge");
       }
     } finally {
       setLoading(false);
@@ -103,10 +126,15 @@ export default function AdminKnowledgePage() {
       // If admin API doesn't exist (404) or fails, just use the item data we already have
       if (e?.response?.status === 404) {
         // API endpoint doesn't exist, use available data
-        console.warn('Admin knowledge detail API not available, using list data');
+        console.warn(
+          "Admin knowledge detail API not available, using list data",
+        );
       } else {
         // Other error, still use available data but log it
-        console.warn('Could not fetch detailed knowledge info:', e?.response?.data?.message || e?.message);
+        console.warn(
+          "Could not fetch detailed knowledge info:",
+          e?.response?.data?.message || e?.message,
+        );
       }
       // Keep using the item data we already have (setSelectedKnowledge was already called above)
     }
@@ -179,7 +207,7 @@ export default function AdminKnowledgePage() {
       key: 'actions', 
       fixed: 'right' as const, 
       render: (_: any, r: any) => (
-        <Space>
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm" 
@@ -191,21 +219,20 @@ export default function AdminKnowledgePage() {
           <Button 
             variant="destructive" 
             size="sm" 
-            onClick={async () => {
-              if (!confirm(`Force delete knowledge entry "${r.title || r.id}"? This cannot be undone.`)) return;
-              try {
-                await adminForceDeleteKnowledge(r.id);
-                toast.success('Knowledge deleted');
-                load();
-              } catch (e: any) {
-                toast.error(e?.response?.data?.message || 'Failed to delete knowledge');
-              }
-            }}
+            onClick={() =>
+              setConfirmAction({
+                type: "delete",
+                target: r,
+                title: `Force delete knowledge entry "${r.title || r.id}"?`,
+                description:
+                  "Thao tác này không thể hoàn tác. Dữ liệu kiến thức này sẽ bị xoá vĩnh viễn khỏi hệ thống.",
+              })
+            }
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete
           </Button>
-        </Space>
+        </div>
       ) 
     },
   ];
@@ -312,21 +339,27 @@ export default function AdminKnowledgePage() {
 
       {/* Knowledge Table */}
       <Card className="rounded-2xl border overflow-x-auto p-2">
-        <Table
-          rowKey="id"
-          size="middle"
-          columns={columns as any}
-          dataSource={filtered}
-          loading={loading}
-          pagination={{ 
-            current: page, 
-            pageSize: perPage, 
-            total: total, 
-            showSizeChanger: false, 
-            onChange: (p) => setPage(p) 
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
+        {(() => {
+          const { Table } = require("antd");
+          return (
+            <Table
+              rowKey="id"
+              size="middle"
+              columns={columns as any}
+              dataSource={filtered}
+              loading={loading}
+              pagination={{
+                current: page,
+                pageSize: perPage,
+                total: total,
+                showSizeChanger: false,
+                onChange: (p: number) => setPage(p),
+              }}
+              scroll={{ x: 1200 }}
+            />
+          );
+        })()}
       </Card>
 
       {/* View Knowledge Dialog */}
@@ -390,21 +423,21 @@ export default function AdminKnowledgePage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setViewOpen(false)}>
+              Close
+            </Button>
             {selectedKnowledge && (
-              <Button 
-                variant="destructive" 
-                onClick={async () => {
-                  if (!confirm(`Force delete knowledge entry "${selectedKnowledge.title || selectedKnowledge.id}"? This cannot be undone.`)) return;
-                  try {
-                    await adminForceDeleteKnowledge(selectedKnowledge.id);
-                    toast.success('Knowledge deleted');
-                    setViewOpen(false);
-                    load();
-                  } catch (e: any) {
-                    toast.error(e?.response?.data?.message || 'Failed to delete knowledge');
-                  }
-                }}
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  setConfirmAction({
+                    type: "delete",
+                    target: selectedKnowledge,
+                    title: `Force delete knowledge entry "${selectedKnowledge.title || selectedKnowledge.id}"?`,
+                    description:
+                      "Thao tác này không thể hoàn tác. Dữ liệu kiến thức này sẽ bị xoá vĩnh viễn khỏi hệ thống.",
+                  })
+                }
               >
                 Force Delete
               </Button>
@@ -412,6 +445,33 @@ export default function AdminKnowledgePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdminConfirmActionDialog
+        action={confirmAction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+          }
+        }}
+        onConfirm={async (action) => {
+          if (!action.target) return;
+          const id = (action.target as any).id;
+          try {
+            if (action.type === "delete") {
+              await adminForceDeleteKnowledge(id);
+              toast.success("Knowledge deleted");
+              if (selectedKnowledge?.id === id) {
+                setViewOpen(false);
+              }
+            }
+            load();
+          } catch (e: any) {
+            toast.error(
+              e?.response?.data?.message || "Failed to perform action",
+            );
+          }
+        }}
+      />
     </div>
   );
 }

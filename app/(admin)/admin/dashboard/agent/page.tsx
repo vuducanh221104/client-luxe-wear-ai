@@ -1,23 +1,44 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, Tag, Space } from 'antd';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { adminListAllAgents, adminForceDeleteAgent, getAgent, getAgentStats } from '@/services/agentService';
-import { toast } from 'sonner';
-import { 
-  Eye, 
-  Trash2, 
-  RefreshCw, 
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tag } from "antd";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  adminListAllAgents,
+  adminForceDeleteAgent,
+  getAgent,
+  getAgentStats,
+} from "@/services/agentService";
+import { toast } from "sonner";
+import {
+  Eye,
+  Trash2,
+  RefreshCw,
   BarChart3,
   Database,
   MessageSquare,
-  User
-} from 'lucide-react';
+  User,
+} from "lucide-react";
+import {
+  AdminActionState,
+  AdminConfirmActionDialog,
+} from "@/components/admin/AdminConfirmActionDialog";
 
 export default function AdminAgentsPage() {
   const [data, setData] = useState<any[]>([]);
@@ -25,13 +46,19 @@ export default function AdminAgentsPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
-  const [query, setQuery] = useState('');
-  const [pubFilter, setPubFilter] = useState<'all' | 'public' | 'private'>('all');
-  const [sortKey, setSortKey] = useState<'created_desc' | 'created_asc' | 'name_asc' | 'name_desc'>('created_desc');
+  const [query, setQuery] = useState("");
+  const [pubFilter, setPubFilter] = useState<"all" | "public" | "private">(
+    "all",
+  );
+  const [sortKey, setSortKey] = useState<
+    "created_desc" | "created_asc" | "name_asc" | "name_desc"
+  >("created_desc");
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [confirmAction, setConfirmAction] =
+    useState<AdminActionState<any> | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -44,7 +71,7 @@ export default function AdminAgentsPage() {
       setData(agents);
       setTotal(pagination.total || agents.length);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load agents');
+      toast.error(e?.response?.data?.message || "Failed to load agents");
     } finally {
       setLoading(false);
     }
@@ -65,7 +92,9 @@ export default function AdminAgentsPage() {
       setSelectedAgent({ ...agent, ...detail });
       setStats((agentStats as any)?.data || agentStats);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load agent details');
+      toast.error(
+        e?.response?.data?.message || "Failed to load agent details",
+      );
     } finally {
       setLoadingStats(false);
     }
@@ -148,39 +177,38 @@ export default function AdminAgentsPage() {
         ) : '-';
       } 
     },
-    { 
-      title: 'Actions', 
-      key: 'actions', 
-      fixed: 'right' as const, 
+    {
+      title: "Actions",
+      key: "actions",
+      fixed: "right" as const,
       render: (_: any, r: any) => (
-        <Space>
-          <Button 
-            variant="outline" 
-            size="sm" 
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => handleViewAgent(r)}
           >
             <Eye className="h-4 w-4 mr-1" />
             View
           </Button>
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={async () => {
-              if (!confirm(`Force delete agent "${r.name}"? This cannot be undone.`)) return;
-              try {
-                await adminForceDeleteAgent(r.id);
-                toast.success('Agent deleted');
-                load();
-              } catch (e: any) {
-                toast.error(e?.response?.data?.message || 'Failed to delete agent');
-              }
-            }}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() =>
+              setConfirmAction({
+                type: "delete",
+                target: r,
+                title: `Force delete agent "${r.name}"?`,
+                description:
+                  "Thao tác này không thể hoàn tác. Tất cả hội thoại và cấu hình liên quan có thể bị xoá vĩnh viễn.",
+              })
+            }
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete
           </Button>
-        </Space>
-      ) 
+        </div>
+      ),
     },
   ];
 
@@ -287,21 +315,27 @@ export default function AdminAgentsPage() {
 
       {/* Agents Table */}
       <Card className="rounded-2xl border overflow-x-auto p-2">
-        <Table
-          rowKey="id"
-          size="middle"
-          columns={columns as any}
-          dataSource={filtered}
-          loading={loading}
-          pagination={{ 
-            current: page, 
-            pageSize: perPage, 
-            total: filtered.length, 
-            showSizeChanger: false, 
-            onChange: (p) => setPage(p) 
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
+        {(() => {
+          const { Table } = require("antd");
+          return (
+            <Table
+              rowKey="id"
+              size="middle"
+              columns={columns as any}
+              dataSource={filtered}
+              loading={loading}
+              pagination={{
+                current: page,
+                pageSize: perPage,
+                total: filtered.length,
+                showSizeChanger: false,
+                onChange: (p: number) => setPage(p),
+              }}
+              scroll={{ x: 1200 }}
+            />
+          );
+        })()}
       </Card>
 
       {/* View Agent Dialog */}
@@ -411,21 +445,21 @@ export default function AdminAgentsPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setViewOpen(false)}>
+              Close
+            </Button>
             {selectedAgent && (
-              <Button 
-                variant="destructive" 
-                onClick={async () => {
-                  if (!confirm(`Force delete agent "${selectedAgent.name}"? This cannot be undone.`)) return;
-                  try {
-                    await adminForceDeleteAgent(selectedAgent.id);
-                    toast.success('Agent deleted');
-                    setViewOpen(false);
-                    load();
-                  } catch (e: any) {
-                    toast.error(e?.response?.data?.message || 'Failed to delete agent');
-                  }
-                }}
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  setConfirmAction({
+                    type: "delete",
+                    target: selectedAgent,
+                    title: `Force delete agent "${selectedAgent.name}"?`,
+                    description:
+                      "Thao tác này không thể hoàn tác. Tất cả hội thoại và cấu hình liên quan có thể bị xoá vĩnh viễn.",
+                  })
+                }
               >
                 Force Delete
               </Button>
@@ -433,6 +467,33 @@ export default function AdminAgentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdminConfirmActionDialog
+        action={confirmAction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+          }
+        }}
+        onConfirm={async (action) => {
+          if (!action.target) return;
+          const agentId = (action.target as any).id;
+          try {
+            if (action.type === "delete") {
+              await adminForceDeleteAgent(agentId);
+              toast.success("Agent deleted");
+              if (selectedAgent?.id === agentId) {
+                setViewOpen(false);
+              }
+            }
+            load();
+          } catch (e: any) {
+            toast.error(
+              e?.response?.data?.message || "Failed to perform action",
+            );
+          }
+        }}
+      />
     </div>
   );
 }

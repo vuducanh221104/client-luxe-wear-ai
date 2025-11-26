@@ -2,7 +2,22 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Search, Sun, Moon, Settings, LogOut, LayoutDashboard, Users, Bot, Database, Building2, BarChart3, Activity, AlertTriangle, FileText } from "lucide-react";
+import {
+  Search,
+  Sun,
+  Moon,
+  Settings,
+  LogOut,
+  LayoutDashboard,
+  Users,
+  Bot,
+  Database,
+  Building2,
+  BarChart3,
+  Activity,
+  AlertTriangle,
+  FileText,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -11,8 +26,16 @@ import { logout as logoutAction } from "@/store/authSlice";
 import { clearTokens, logout as apiLogout } from "@/services/authUserService";
 import { resetTenantState } from "@/store/tenantSlice";
 import UserAvatar from "@/components/user-avatar";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   CommandDialog,
   CommandEmpty,
@@ -46,6 +69,17 @@ export default function AdminHeader() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const { theme, setTheme } = useTheme();
+  const rawRole = user?.role?.toLowerCase()?.trim();
+  const roleLabel =
+    rawRole === "super_admin"
+      ? "Super admin"
+      : rawRole === "owner"
+      ? "Owner"
+      : rawRole === "admin"
+      ? "Admin"
+      : rawRole === "member"
+      ? "Member"
+      : undefined;
 
   useEffect(() => {
     setMounted(true);
@@ -167,8 +201,21 @@ export default function AdminHeader() {
             {open && (
               <div className="absolute right-4 top-12 w-72 rounded-2xl border bg-background shadow-xl animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                 <div className="p-4">
-                  <div className="text-base font-semibold">{user?.name || "Admin"}</div>
-                  <div className="text-sm text-muted-foreground">{user?.email || ""}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-base font-semibold">
+                        {user?.name || "Admin"}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {user?.email || ""}
+                      </div>
+                    </div>
+                    {roleLabel && (
+                      <Badge variant="outline" className="text-xs px-2 py-0.5">
+                        {roleLabel}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="h-px bg-border" />
                 <div className="p-2">

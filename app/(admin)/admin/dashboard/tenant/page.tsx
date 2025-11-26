@@ -1,33 +1,49 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, Tag, Space } from 'antd';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { 
-  adminListAllTenants, 
-  adminGetTenantStats, 
-  adminSuspendTenant, 
-  adminActivateTenant, 
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tag } from "antd";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  adminListAllTenants,
+  adminGetTenantStats,
+  adminSuspendTenant,
+  adminActivateTenant,
   adminDeleteTenant,
   getTenantById,
   getTenantStats,
-  listTenantMembers
-} from '@/services/tenantService';
-import { toast } from 'sonner';
-import { 
-  Eye, 
-  Trash2, 
-  RefreshCw, 
+  listTenantMembers,
+} from "@/services/tenantService";
+import { toast } from "sonner";
+import {
+  Eye,
+  Trash2,
+  RefreshCw,
   Building2,
   Users,
   Ban,
   CheckCircle,
-  Search
-} from 'lucide-react';
+  Search,
+} from "lucide-react";
+import {
+  AdminActionState,
+  AdminConfirmActionDialog,
+} from "@/components/admin/AdminConfirmActionDialog";
 
 export default function AdminTenantsPage() {
   const [data, setData] = useState<any[]>([]);
@@ -35,14 +51,16 @@ export default function AdminTenantsPage() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
-  const [query, setQuery] = useState('');
-  const [planFilter, setPlanFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [query, setQuery] = useState("");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const [tenantStats, setTenantStats] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
+  const [confirmAction, setConfirmAction] =
+    useState<AdminActionState<any> | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -73,10 +91,17 @@ export default function AdminTenantsPage() {
         } else if (body.data?.tenants) {
           tenants = Array.isArray(body.data.tenants) ? body.data.tenants : [];
         }
-        paginationTotal = body.pagination?.total || body.pagination?.totalCount || body.data?.pagination?.total || tenants.length;
+        paginationTotal =
+          body.pagination?.total ||
+          body.pagination?.totalCount ||
+          body.data?.pagination?.total ||
+          tenants.length;
       } else if (body?.tenants) {
         tenants = Array.isArray(body.tenants) ? body.tenants : [];
-        paginationTotal = body.pagination?.total || body.pagination?.totalCount || tenants.length;
+        paginationTotal =
+          body.pagination?.total ||
+          body.pagination?.totalCount ||
+          tenants.length;
       }
 
       setData(tenants);
@@ -86,14 +111,14 @@ export default function AdminTenantsPage() {
       const statsBody = (statsRes as any)?.data || statsRes;
       setStats(statsBody);
     } catch (e: any) {
-      console.error('Failed to load tenants:', e);
+      console.error("Failed to load tenants:", e);
       // If API fails, try to show empty state gracefully
       if (e?.response?.status === 404 || e?.response?.status === 500) {
         setData([]);
         setTotal(0);
         // Don't show error toast for 404/500, just show empty state
       } else {
-        toast.error(e?.response?.data?.message || 'Failed to load tenants');
+        toast.error(e?.response?.data?.message || "Failed to load tenants");
       }
     } finally {
       setLoading(false);
@@ -128,36 +153,29 @@ export default function AdminTenantsPage() {
       setTenantStats((stats as any)?.data || stats);
       setMembers((membersList as any)?.data || []);
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to load tenant details');
+      toast.error(
+        e?.response?.data?.message || "Failed to load tenant details",
+      );
     }
   };
 
   const handleSuspend = async (tenantId: string) => {
-    if (!confirm('Suspend this tenant?')) return;
-    try {
-      await adminSuspendTenant(tenantId);
-      toast.success('Tenant suspended');
-      load();
-      if (selectedTenant?.id === tenantId) {
-        setSelectedTenant({ ...selectedTenant, status: 'suspended' });
-      }
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to suspend tenant');
-    }
+    setConfirmAction({
+      type: "suspend",
+      target: { id: tenantId },
+      title: "Suspend tenant này?",
+      description:
+        "Tenant sẽ bị tạm dừng truy cập cho tới khi được kích hoạt lại.",
+    });
   };
 
   const handleActivate = async (tenantId: string) => {
-    if (!confirm('Activate this tenant?')) return;
-    try {
-      await adminActivateTenant(tenantId);
-      toast.success('Tenant activated');
-      load();
-      if (selectedTenant?.id === tenantId) {
-        setSelectedTenant({ ...selectedTenant, status: 'active' });
-      }
-    } catch (e: any) {
-      toast.error(e?.response?.data?.message || 'Failed to activate tenant');
-    }
+    setConfirmAction({
+      type: "activate",
+      target: { id: tenantId },
+      title: "Activate tenant này?",
+      description: "Tenant sẽ được mở lại quyền truy cập vào hệ thống.",
+    });
   };
 
   const columns = [
@@ -193,11 +211,11 @@ export default function AdminTenantsPage() {
       key: 'status', 
       render: (v: string) => {
         const colors: Record<string, string> = {
-          active: 'green',
-          inactive: 'default',
-          suspended: 'red',
+          active: "green",
+          inactive: "default",
+          suspended: "red",
         };
-        return <Tag color={colors[v] || 'default'}>{v || 'active'}</Tag>;
+        return <Tag color={colors[v] || "default"}>{v || "active"}</Tag>;
       }
     },
     { 
@@ -219,7 +237,7 @@ export default function AdminTenantsPage() {
       key: 'actions', 
       fixed: 'right' as const, 
       render: (_: any, r: any) => (
-        <Space>
+        <div className="flex gap-2">
           <Button 
             variant="outline" 
             size="sm" 
@@ -251,23 +269,19 @@ export default function AdminTenantsPage() {
             variant="destructive" 
             size="sm" 
             onClick={async () => {
-              if (!confirm(`Delete tenant "${r.name}"? This cannot be undone.`)) return;
-              try {
-                await adminDeleteTenant(r.id);
-                toast.success('Tenant deleted');
-                load();
-                if (selectedTenant?.id === r.id) {
-                  setViewOpen(false);
-                }
-              } catch (e: any) {
-                toast.error(e?.response?.data?.message || 'Failed to delete tenant');
-              }
+              setConfirmAction({
+                type: "delete",
+                target: r,
+                title: `Xoá tenant "${r.name}"?`,
+                description:
+                  "Thao tác này không thể hoàn tác. Dữ liệu và quyền truy cập liên quan có thể bị xoá vĩnh viễn.",
+              });
             }}
           >
             <Trash2 className="h-4 w-4 mr-1" />
             Delete
           </Button>
-        </Space>
+        </div>
       ) 
     },
   ];
@@ -276,9 +290,10 @@ export default function AdminTenantsPage() {
   const statsSummary = useMemo(() => {
     const byPlan: Record<string, number> = {};
     const byStatus: Record<string, number> = {};
-    data.forEach(t => {
-      byPlan[t.plan || 'free'] = (byPlan[t.plan || 'free'] || 0) + 1;
-      byStatus[t.status || 'active'] = (byStatus[t.status || 'active'] || 0) + 1;
+    data.forEach((t) => {
+      byPlan[t.plan || "free"] = (byPlan[t.plan || "free"] || 0) + 1;
+      byStatus[t.status || "active"] =
+        (byStatus[t.status || "active"] || 0) + 1;
     });
     return { byPlan, byStatus, total: data.length };
   }, [data]);
@@ -394,21 +409,27 @@ export default function AdminTenantsPage() {
 
       {/* Tenants Table */}
       <Card className="rounded-2xl border overflow-x-auto p-2">
-        <Table
-          rowKey="id"
-          size="middle"
-          columns={columns as any}
-          dataSource={data}
-          loading={loading}
-          pagination={{ 
-            current: page, 
-            pageSize: perPage, 
-            total, 
-            showSizeChanger: false, 
-            onChange: (p) => setPage(p) 
-          }}
-          scroll={{ x: 1200 }}
-        />
+        {/* eslint-disable-next-line @typescript-eslint/no-var-requires */}
+        {(() => {
+          const { Table } = require("antd");
+          return (
+            <Table
+              rowKey="id"
+              size="middle"
+              columns={columns as any}
+              dataSource={data}
+              loading={loading}
+              pagination={{
+                current: page,
+                pageSize: perPage,
+                total,
+                showSizeChanger: false,
+                onChange: (p: number) => setPage(p),
+              }}
+              scroll={{ x: 1200 }}
+            />
+          );
+        })()}
       </Card>
 
       {/* View Tenant Dialog */}
@@ -499,16 +520,24 @@ export default function AdminTenantsPage() {
             </div>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setViewOpen(false)}>Close</Button>
+            <Button variant="outline" onClick={() => setViewOpen(false)}>
+              Close
+            </Button>
             {selectedTenant && (
               <>
                 {selectedTenant.status === 'suspended' ? (
-                  <Button variant="outline" onClick={() => handleActivate(selectedTenant.id)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleActivate(selectedTenant.id)}
+                  >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Activate
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={() => handleSuspend(selectedTenant.id)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleSuspend(selectedTenant.id)}
+                  >
                     <Ban className="h-4 w-4 mr-2" />
                     Suspend
                   </Button>
@@ -516,15 +545,13 @@ export default function AdminTenantsPage() {
                 <Button 
                   variant="destructive" 
                   onClick={async () => {
-                    if (!confirm(`Delete tenant "${selectedTenant.name}"? This cannot be undone.`)) return;
-                    try {
-                      await adminDeleteTenant(selectedTenant.id);
-                      toast.success('Tenant deleted');
-                      setViewOpen(false);
-                      load();
-                    } catch (e: any) {
-                      toast.error(e?.response?.data?.message || 'Failed to delete tenant');
-                    }
+                    setConfirmAction({
+                      type: "delete",
+                      target: selectedTenant,
+                      title: `Xoá tenant "${selectedTenant.name}"?`,
+                      description:
+                        "Thao tác này không thể hoàn tác. Dữ liệu và quyền truy cập liên quan có thể bị xoá vĩnh viễn.",
+                    });
                   }}
                 >
                   Delete
@@ -534,6 +561,45 @@ export default function AdminTenantsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdminConfirmActionDialog
+        action={confirmAction}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAction(null);
+          }
+        }}
+        onConfirm={async (action) => {
+          if (!action.target) return;
+          const tenantId = (action.target as any).id;
+          try {
+            if (action.type === "delete") {
+              await adminDeleteTenant(tenantId);
+              toast.success("Tenant deleted");
+              if (selectedTenant?.id === tenantId) {
+                setViewOpen(false);
+              }
+            } else if (action.type === "suspend") {
+              await adminSuspendTenant(tenantId);
+              toast.success("Tenant suspended");
+              if (selectedTenant?.id === tenantId) {
+                setSelectedTenant({ ...selectedTenant, status: "suspended" });
+              }
+            } else if (action.type === "activate") {
+              await adminActivateTenant(tenantId);
+              toast.success("Tenant activated");
+              if (selectedTenant?.id === tenantId) {
+                setSelectedTenant({ ...selectedTenant, status: "active" });
+              }
+            }
+            load();
+          } catch (e: any) {
+            toast.error(
+              e?.response?.data?.message || "Failed to perform action",
+            );
+          }
+        }}
+      />
     </div>
   );
 }
