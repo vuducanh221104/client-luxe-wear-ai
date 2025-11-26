@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { logout as apiLogout, clearTokens } from "@/services/authUserService";
+import { resetTenantState } from "@/store/tenantSlice";
 import UserAvatar from "@/components/user-avatar";
 import { 
   Bot, 
@@ -257,18 +258,20 @@ export default function DashboardLayout({
     try {
       await apiLogout();
       dispatch(logoutAction());
+      dispatch(resetTenantState());
       clearTokens();
       setMenuOpen(false);
       setLogoutDialogOpen(false);
-      router.push("/auth/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
       // Still clear local state even if API call fails
       dispatch(logoutAction());
+      dispatch(resetTenantState());
       clearTokens();
       setMenuOpen(false);
       setLogoutDialogOpen(false);
-      router.push("/auth/login");
+      router.push("/");
     } finally {
       setLoggingOut(false);
     }

@@ -48,6 +48,15 @@ const tenantSlice = createSlice({
       state.tenants = state.tenants.filter((t) => t.id !== action.payload);
       if (state.currentTenant === action.payload) state.currentTenant = null;
     },
+    resetTenantState: (state) => {
+      state.tenants = [];
+      state.currentTenant = null;
+      state.loading = false;
+      state.error = null;
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentTenant');
+      }
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
@@ -63,6 +72,7 @@ export const {
   addTenant,
   updateTenant,
   removeTenant,
+  resetTenantState,
   setLoading,
   setError,
 } = tenantSlice.actions;

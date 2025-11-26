@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { LoadingGrid } from "@/components/shared/LoadingGrid";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { listAgents, searchAgents, deleteAgent, getAgent, createAgent } from "@/services/agentService";
 import { MessageCircle, MoreVertical, Plus } from "lucide-react";
@@ -94,12 +96,12 @@ export default function DashboardHomePage() {
       </div>
 
       {showTenantEmpty ? (
-        <div className="text-center py-12 border rounded-2xl">
-          <p className="text-muted-foreground">Chọn hoặc tạo workspace tenant để xem agents.</p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Button onClick={() => router.push("/dashboard/tenants")}>Đi đến Tenants</Button>
-          </div>
-        </div>
+        <EmptyState
+          title="Bạn chưa chọn workspace nào"
+          description="Chọn hoặc tạo workspace tenant để xem và quản lý AI agents của bạn."
+          actionLabel="Đi đến Tenants"
+          onAction={() => router.push("/dashboard/tenants")}
+        />
       ) : (
         <>
           <div className="flex gap-3">
@@ -131,24 +133,14 @@ export default function DashboardHomePage() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="rounded-2xl border overflow-hidden animate-pulse">
-                  <div className="h-56 bg-muted" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 w-3/4 bg-muted rounded" />
-                    <div className="h-3 w-1/2 bg-muted rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <LoadingGrid />
           ) : agents.length === 0 ? (
-            <div className="text-center py-16 border rounded-2xl bg-muted/20">
-              <p className="text-muted-foreground mb-4">Chưa có agent nào trong tenant này</p>
-              <Button className="mt-4" onClick={() => router.push("/dashboard/agents/new")}>
-                Tạo agent đầu tiên của bạn
-              </Button>
-            </div>
+            <EmptyState
+              title="Chưa có agent nào trong tenant này"
+              description="Tạo AI Agent đầu tiên để bắt đầu phục vụ khách hàng với LuxeWear."
+              actionLabel="Tạo agent đầu tiên của bạn"
+              onAction={() => router.push("/dashboard/agents/new")}
+            />
           ) : (
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

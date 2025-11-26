@@ -1,7 +1,4 @@
-import axios from "axios";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
-const API_PREFIX = "/api";
+import api, { API_BASE_URL, API_PREFIX } from "./http";
 
 export interface AuthResponse {
   success: boolean;
@@ -21,7 +18,7 @@ export interface AuthResponse {
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/login`, {
+  const res = await api.post(`/auth/login`, {
     email,
     password,
   });
@@ -49,12 +46,8 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return payload as AuthResponse;
 }
 
-export async function register(
-  email: string,
-  password: string,
-  name?: string
-): Promise<AuthResponse> {
-  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/register`, {
+export async function register(email: string, password: string, name?: string): Promise<AuthResponse> {
+  const res = await api.post(`/auth/register`, {
     email,
     password,
     name,
@@ -80,20 +73,13 @@ export function getOAuthUrl(provider: "google" | "github"): string {
   return `${API_BASE_URL}${API_PREFIX}/auth/${provider}`;
 }
 
-export async function getMe(): Promise<{
-  success: boolean;
-  message: string;
-  data?: { user?: any; memberships?: any[] };
-}> {
-  const token = getAccessToken();
-  const res = await axios.get(`${API_BASE_URL}${API_PREFIX}/auth/me`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+export async function getMe(): Promise<{ success: boolean; message: string; data?: { user?: any; memberships?: any[] } }> {
+  const res = await api.get(`/auth/me`);
   return res.data;
 }
 
 export async function refreshToken(refreshToken: string): Promise<{ success: boolean; message: string; data?: { accessToken?: string } }> {
-  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/refresh`, {
+  const res = await api.post(`/auth/refresh`, {
     refreshToken,
   });
   // server returns { token } -> normalize to accessToken
@@ -108,22 +94,17 @@ export async function refreshToken(refreshToken: string): Promise<{ success: boo
 }
 
 export async function forgotPassword(email: string) {
-  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/forgot-password`, { email });
+  const res = await api.post(`/auth/forgot-password`, { email });
   return res.data;
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {
-  const token = getAccessToken();
-  const res = await axios.post(
-    `${API_BASE_URL}${API_PREFIX}/auth/change-password`,
-    { currentPassword, newPassword },
-    { headers: token ? { Authorization: `Bearer ${token}` } : undefined }
-  );
+  const res = await api.post(`/auth/change-password`, { currentPassword, newPassword });
   return res.data;
 }
 
 export async function verifyTokenApi(token: string) {
-  const res = await axios.post(`${API_BASE_URL}${API_PREFIX}/auth/verify-token`, { token });
+  const res = await api.post(`/auth/verify-token`, { token });
   return res.data;
 }
 
@@ -146,13 +127,8 @@ export function clearTokens() {
 
 export async function logout(): Promise<void> {
   try {
-    const token = getAccessToken();
-    if (token) {
-      await axios.post(
-        `${API_BASE_URL}${API_PREFIX}/auth/logout`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    if (getAccessToken()) {
+      await api.post(`/auth/logout`, {});
     }
   } catch {
     // ignore API errors on client logout

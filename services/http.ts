@@ -1,7 +1,14 @@
-import axios from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 export const API_PREFIX = "/api";
+
+export interface ApiError {
+  message: string;
+  status?: number;
+  data?: any;
+  isNetworkError: boolean;
+}
 
 const api = axios.create({ baseURL: `${API_BASE_URL}${API_PREFIX}` });
 
@@ -46,11 +53,40 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function normalizeApiError(error: unknown): ApiError {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+    const payload =
+      typeof data === "object" && data !== null
+        ? (data as { message?: string; error?: string })
+        : undefined;
+    const message =
+      (typeof data === "string" && data) ||
+      payload?.message ||
+      payload?.error ||
+      error.message ||
+      "Request failed";
+    return {
+      message,
+      status,
+      data,
+      isNetworkError: !status,
+    };
+  }
+
+  if (error instanceof Error) {
+    return { message: error.message, isNetworkError: false };
+  }
+
+  return { message: "Unknown error", isNetworkError: false };
+}
+
 api.interceptors.response.use(
   (res) => res,
-  async (error) => {
-    const original = error.config;
-    if (error?.response?.status === 401 && !original._retry) {
+  async (error: AxiosError) => {
+    const original = error.config as (AxiosRequestConfig & { _retry?: boolean }) | undefined;
+    if (error?.response?.status === 401 && original && !original._retry) {
       original._retry = true;
       const doRefresh = async () => {
         const rToken = getRefreshToken();
@@ -85,15 +121,17 @@ api.interceptors.response.use(
         pendingQueue.forEach((cb) => cb(null));
         pendingQueue = [];
         clearTokens();
-        throw e;
+        return Promise.reject(normalizeApiError(e));
       } finally {
         isRefreshing = false;
       }
     }
-    throw error;
+    return Promise.reject(normalizeApiError(error));
   }
 );
 
 export default api;
+
+export { normalizeApiError };
 
 

@@ -9,6 +9,7 @@ import { useTheme } from "next-themes";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { clearTokens, logout as apiLogout } from "@/services/authUserService";
+import { resetTenantState } from "@/store/tenantSlice";
 import UserAvatar from "@/components/user-avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -76,18 +77,20 @@ export default function AdminHeader() {
     try {
       await apiLogout();
       dispatch(logoutAction());
+      dispatch(resetTenantState());
       clearTokens();
       setOpen(false);
       setLogoutDialogOpen(false);
-      router.push("/auth/login");
+      router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
       // Still clear local state even if API call fails
       dispatch(logoutAction());
+      dispatch(resetTenantState());
       clearTokens();
       setOpen(false);
       setLogoutDialogOpen(false);
-      router.push("/auth/login");
+      router.push("/");
     } finally {
       setLoggingOut(false);
     }
