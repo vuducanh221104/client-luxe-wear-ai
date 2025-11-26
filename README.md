@@ -112,7 +112,7 @@ Keep feature-specific components close to their domain folder and move reusable 
 - **State:** Use Redux Toolkit for persisted auth / tenant context. Prefer hooks (`useAuth`, `useTenant`, `usePagination`, etc.) to keep components presentational.
 - **UI consistency:** Reuse primitives from `components/ui` and shared layouts to prevent Tailwind drift. When a pattern repeats twice, extract it.
 - **Lint & format:** ESLint (Next + @typescript-eslint) prevents `any`, stray logs, and unused vars. Prettier + Tailwind plugin keeps class order deterministic. Run `npm run lint && npm run format:check` before pushing.
-- **Docs:** Update this README, `CLIENT_IMPROVEMENT_CHECKLIST.md`, and feature guides when you add sections or environment variables.
+- **Docs:** Update this README, and feature guides when you add sections or environment variables.
 
 ---
 

@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo } from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,7 @@ const data = [
   }
 ];
 
-export default function MetricCard({ className }: { className?: string }) {
+function MetricCard({ className }: { className?: string }) {
   return (
     <Card className={className}>
       <CardHeader>
@@ -127,3 +128,5 @@ export default function MetricCard({ className }: { className?: string }) {
     </Card>
   );
 }
+
+export default memo(MetricCard);

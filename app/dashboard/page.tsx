@@ -1,31 +1,31 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { LoadingGrid } from "@/components/shared/LoadingGrid";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listAgents, searchAgents, deleteAgent, getAgent, createAgent } from "@/services/agentService";
-import { MessageCircle, MoreVertical, Plus } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { deleteAgent, getAgent, createAgent } from "@/services/agentService";
+import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { chat } from "@/services/chatService";
-import { useAppSelector } from "@/store";
+import { trackEvent, reportError } from "@/services/observabilityService";
+import { useTenant } from "@/lib/hooks/useTenant";
+import { usePagination } from "@/lib/hooks/usePagination";
+import { useListAgentsQuery, useSearchAgentsQuery } from "@/services/agentsApi";
+import { AgentCard } from "@/components/agent/AgentCard";
 
 export default function DashboardHomePage() {
   const router = useRouter();
-  const currentTenant = useAppSelector((s) => s.tenant.currentTenant);
+  const { currentTenant } = useTenant();
   const [agents, setAgents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(12);
+  const { page, pageCount, setPage, setPageSize, setTotal } = usePagination(1, 12);
   const [perPage, setPerPage] = useState(12);
-  const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState("created_at-DESC");
   const [confirmOpen, setConfirmOpen] = useState<null | { id: string; name: string }>(null);
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
@@ -33,57 +33,56 @@ export default function DashboardHomePage() {
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
 
-  const loadAgents = useCallback(async (q: string) => {
+  const hasSearch = !!searchTerm.trim();
+  const {
+    data: listData,
+    isLoading: isLoadingList,
+    isFetching: isFetchingList,
+    refetch: refetchList,
+  } = useListAgentsQuery(
+    { page, pageSize: perPage },
+    { skip: !currentTenant || hasSearch }
+  );
+  const {
+    data: searchData,
+    isLoading: isLoadingSearch,
+    isFetching: isFetchingSearch,
+    refetch: refetchSearch,
+  } = useSearchAgentsQuery(
+    { q: searchTerm.trim(), page, pageSize: perPage },
+    { skip: !currentTenant || !hasSearch }
+  );
+
+  useEffect(() => {
     if (!currentTenant) {
       setAgents([]);
       setTotal(0);
       return;
     }
-    setLoading(true);
-    try {
-      let res;
-      if (q) {
-        res = await searchAgents({ q, page, pageSize: perPage });
-      } else {
-        res = await listAgents({ page, pageSize: perPage });
+    const source = hasSearch ? searchData : listData;
+    if (!source) return;
+
+    let agentsData = (source as any).data?.agents || (source as any).agents || [];
+    const pagination = (source as any).data?.pagination || (source as any).pagination;
+
+    const [field, order] = sortBy.split("-");
+    agentsData = [...agentsData].sort((a: any, b: any) => {
+      const aName = a.name?.toLowerCase?.() || "";
+      const bName = b.name?.toLowerCase?.() || "";
+      const aCreated = new Date(a.createdAt || a.created_at || 0).getTime();
+      const bCreated = new Date(b.createdAt || b.created_at || 0).getTime();
+      if (field === "name") {
+        return order === "ASC" ? aName.localeCompare(bName) : bName.localeCompare(aName);
       }
-      let agentsData = res.data?.agents || res.data?.data?.agents || [];
-      const pagination = res.data?.pagination || res.data?.data?.pagination;
-      // client-side sorting to meet UI spec
-      const [field, order] = sortBy.split("-");
-      agentsData = [...agentsData].sort((a: any, b: any) => {
-        const aName = a.name?.toLowerCase?.() || "";
-        const bName = b.name?.toLowerCase?.() || "";
-        const aCreated = new Date(a.createdAt || a.created_at || 0).getTime();
-        const bCreated = new Date(b.createdAt || b.created_at || 0).getTime();
-        if (field === "name") {
-          return order === "ASC" ? aName.localeCompare(bName) : bName.localeCompare(aName);
-        }
-        // created_at default
-        return order === "ASC" ? aCreated - bCreated : bCreated - aCreated;
-      });
-      setAgents(agentsData);
-      setTotal(pagination?.totalCount || agentsData.length);
-    } catch (e: any) {
-      console.error("Failed to load agents:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, perPage, sortBy, currentTenant]);
+      return order === "ASC" ? aCreated - bCreated : bCreated - aCreated;
+    });
 
-  useEffect(() => {
-    loadAgents(searchTerm);
-  }, [page, sortBy, perPage, loadAgents, searchTerm, currentTenant]);
-
-  useEffect(() => {
-    const debounce = setTimeout(() => {
-      if (!searchTerm) setPage(1);
-      loadAgents(searchTerm);
-    }, 500);
-    return () => clearTimeout(debounce);
-  }, [searchTerm, perPage, loadAgents]);
+    setAgents(agentsData);
+    setTotal(pagination?.totalCount || agentsData.length);
+  }, [currentTenant, hasSearch, listData, searchData, sortBy, setTotal]);
 
   const showTenantEmpty = !currentTenant;
+  const loading = isLoadingList || isLoadingSearch || isFetchingList || isFetchingSearch;
 
   return (
     <div className="space-y-6">
@@ -122,7 +121,15 @@ export default function DashboardHomePage() {
                 <SelectItem value="name-DESC">Tên Z-A</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={String(perPage)} onValueChange={(v) => { setPerPage(parseInt(v)); setPage(1); }}>
+              <Select
+                value={String(perPage)}
+                onValueChange={(v) => {
+                  const next = parseInt(v);
+                  setPerPage(next);
+                  setPageSize(next);
+                  setPage(1);
+                }}
+              >
               <SelectTrigger className="w-[110px]"><SelectValue placeholder="Mỗi trang" /></SelectTrigger>
               <SelectContent>
                 {[6,12,24,36].map((n) => (
@@ -145,78 +152,38 @@ export default function DashboardHomePage() {
             <>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {agents.map((agent) => (
-                  <div key={agent.id} className="rounded-2xl border overflow-hidden group hover:shadow-lg transition-all duration-300 hover:border-foreground/20">
-                    <div
-                      className="h-56 bg-gradient-to-r cursor-pointer transition-transform duration-300 group-hover:scale-[1.02]"
-                      style={{
-                        background: `linear-gradient(135deg, ${agent.gradient_color || "#4F46E5"} 0%, ${agent.gradient_color_end || "#7C3AED"} 100%)`,
-                      }}
-                      onClick={() => router.push(`/dashboard/agents/${agent.id}`)}
-                    >
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-background">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base mb-1 truncate">{agent.name}</h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 leading-relaxed">{agent.description || "Không có mô tả"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(() => {
-                            const raw = agent.createdAt || agent.created_at;
-                            const d = raw ? new Date(raw) : null;
-                            const valid = d && !isNaN(d.getTime());
-                            return `Đã tạo ${valid ? d!.toLocaleString('vi-VN') : "N/A"}`;
-                          })()}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 ml-4 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-muted"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setChatAgentId(agent.id);
-                            setChatMessages([]);
-                          }}
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:bg-muted">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => router.push(`/dashboard/agents/${agent.id}`)}>Chỉnh sửa</DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => {
-                              try {
-                                const res = await getAgent(agent.id);
-                                const data = res.data || res;
-                                const payload = {
-                                  name: `${data.name || agent.name} Copy`,
-                                  description: data.description || agent.description,
-                                  config: data.config || agent.config,
-                                } as any;
-                                const created = await createAgent(payload);
-                                if (created.success) {
-                                  toast.success("Đã sao chép agent");
-                                  loadAgents(searchTerm);
-                                } else {
-                                  toast.error(created.message || "Sao chép thất bại");
-                                }
-                              } catch (e: any) {
-                                toast.error(e?.response?.data?.message || e?.message || "Sao chép thất bại");
-                              }
-                            }}>Sao chép</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => setConfirmOpen({ id: agent.id, name: agent.name })}>Xóa</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onOpenDetail={() => router.push(`/dashboard/chat?agentId=${agent.id}`)}
+                    onChat={() => {
+                      setChatAgentId(agent.id);
+                      setChatMessages([]);
+                    }}
+                    onDuplicate={async () => {
+                      try {
+                        const res = await getAgent(agent.id);
+                        const data = res.data || res;
+                        const payload = {
+                          name: `${data.name || agent.name} Copy`,
+                          description: data.description || agent.description,
+                          config: data.config || agent.config,
+                        } as any;
+                        const created = await createAgent(payload);
+                        if (created.success) {
+                          toast.success("Đã sao chép agent");
+                        } else {
+                          toast.error(created.message || "Sao chép thất bại");
+                        }
+                      } catch (e: any) {
+                        toast.error(e?.response?.data?.message || e?.message || "Sao chép thất bại");
+                      }
+                    }}
+                    onDelete={() => setConfirmOpen({ id: agent.id, name: agent.name })}
+                  />
                 ))}
               </div>
-              {Math.ceil(total / perPage) > 1 && (
+              {pageCount > 1 && (
                 <div className="flex justify-center gap-2">
                   <Button
                     variant="outline"
@@ -225,11 +192,13 @@ export default function DashboardHomePage() {
                   >
                     Trước
                   </Button>
-                  <span className="py-2 px-4">{page} / {Math.ceil(total / perPage)}</span>
+                  <span className="py-2 px-4">
+                    {page} / {pageCount}
+                  </span>
                   <Button
                     variant="outline"
-                    onClick={() => setPage((p) => Math.min(Math.ceil(total / perPage), p + 1))}
-                    disabled={page >= Math.ceil(total / perPage)}
+                    onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                    disabled={page >= pageCount}
                   >
                     Sau
                   </Button>
@@ -257,8 +226,9 @@ export default function DashboardHomePage() {
                   if (res.success) {
                     toast.success("Đã xóa agent");
                     setConfirmOpen(null);
-                    // reload current page
-                    loadAgents(searchTerm);
+                    // reload current list/search
+                    refetchList();
+                    refetchSearch();
                   } else {
                     toast.error(res.message || "Xóa agent thất bại");
                   }
@@ -291,7 +261,67 @@ export default function DashboardHomePage() {
             ))}
           </div>
           <div className="space-y-2">
-            <Textarea rows={3} value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Nhập tin nhắn..." />
+            <Textarea
+              rows={3}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Nhập tin nhắn..."
+              onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  // Ctrl+Enter: chèn xuống dòng
+                  e.preventDefault();
+                  const target = e.currentTarget;
+                  const { selectionStart, selectionEnd, value } = target;
+                  const nextValue =
+                    value.slice(0, selectionStart ?? value.length) +
+                    "\n" +
+                    value.slice(selectionEnd ?? value.length);
+                  setChatInput(nextValue);
+                  requestAnimationFrame(() => {
+                    const pos = (selectionStart ?? 0) + 1;
+                    target.selectionStart = target.selectionEnd = pos;
+                  });
+                  return;
+                }
+
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (!chatAgentId || !chatInput.trim() || chatLoading) return;
+                  const msg = chatInput.trim();
+                  setChatMessages((prev) => [...prev, { role: "user", content: msg }]);
+                  setChatInput("");
+                  setChatLoading(true);
+                  void (async () => {
+                    try {
+                      const res = await chat(chatAgentId, { message: msg });
+                      const reply =
+                        (res as any).data?.response ||
+                        (res as any).data?.message ||
+                        (res as any).message ||
+                        "(không có phản hồi)";
+                      setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                      void trackEvent("quick_chat_message_sent", {
+                        agentId: chatAgentId,
+                        source: "dashboard_quick_chat",
+                        length: msg.length,
+                      });
+                    } catch (e: any) {
+                      if (e?.message === "CHAT_TIMEOUT") {
+                        toast.error("Phản hồi mất hơn 20 giây, vui lòng thử lại.");
+                      } else {
+                        toast.error(e?.response?.data?.message || e?.message || "Trò chuyện thất bại");
+                      }
+                      void reportError(e, {
+                        component: "DashboardQuickChat",
+                        extra: { agentId: chatAgentId },
+                      });
+                    } finally {
+                      setChatLoading(false);
+                    }
+                  })();
+                }
+              }}
+            />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setChatInput("")}>Xóa</Button>
               <Button
@@ -303,10 +333,27 @@ export default function DashboardHomePage() {
                   setChatLoading(true);
                   try {
                     const res = await chat(chatAgentId, { message: msg });
-                    const reply = res.data?.response || res.data?.message || "(không có phản hồi)";
+                    const reply =
+                      (res as any).data?.response ||
+                      (res as any).data?.message ||
+                      (res as any).message ||
+                      "(không có phản hồi)";
                     setChatMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+                    void trackEvent("quick_chat_message_sent", {
+                      agentId: chatAgentId,
+                      source: "dashboard_quick_chat",
+                      length: msg.length,
+                    });
                   } catch (e: any) {
-                    toast.error(e?.response?.data?.message || e?.message || "Trò chuyện thất bại");
+                    if (e?.message === "CHAT_TIMEOUT") {
+                      toast.error("Phản hồi mất hơn 20 giây, vui lòng thử lại.");
+                    } else {
+                      toast.error(e?.response?.data?.message || e?.message || "Trò chuyện thất bại");
+                    }
+                    void reportError(e, {
+                      component: "DashboardQuickChat",
+                      extra: { agentId: chatAgentId },
+                    });
                   } finally {
                     setChatLoading(false);
                   }

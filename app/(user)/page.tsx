@@ -79,7 +79,12 @@ export default function InfoPage() {
           {/* Card 1 */}
           <div className="rounded-3xl border bg-background p-6 hover:shadow-lg transition-all duration-300 hover:border-foreground/20">
             <div className="rounded-2xl overflow-hidden border">
-              <img src="/images/home/purpose-built-for-llms.webp" alt="purpose-built-for-llms" className="w-full transition-transform duration-300 hover:scale-105" />
+              <img
+                src="/images/home/purpose-built-for-llms.webp"
+                alt="purpose-built-for-llms"
+                className="w-full transition-transform duration-300 hover:scale-105"
+                loading="lazy"
+              />
             </div>
             <div className="mt-5">
               <div className="text-xl font-bold mb-2">Được xây dựng có mục đích cho LLM</div>
@@ -92,7 +97,12 @@ export default function InfoPage() {
           {/* Card 2 */}
           <div className="rounded-3xl border bg-background p-6 hover:shadow-lg transition-all duration-300 hover:border-foreground/20">
             <div className="rounded-2xl overflow-hidden border">
-              <img src="/images/home/designed-for-simplicity.webp" alt="designed-for-simplicity" className="w-full transition-transform duration-300 hover:scale-105" />
+              <img
+                src="/images/home/designed-for-simplicity.webp"
+                alt="designed-for-simplicity"
+                className="w-full transition-transform duration-300 hover:scale-105"
+                loading="lazy"
+              />
             </div>
             <div className="mt-5">
               <div className="text-xl font-bold mb-2">Được thiết kế để đơn giản</div>
@@ -105,7 +115,12 @@ export default function InfoPage() {
           {/* Card 3 */}
           <div className="rounded-3xl border bg-background p-6 hover:shadow-lg transition-all duration-300 hover:border-foreground/20">
             <div className="rounded-2xl overflow-hidden border">
-              <img src="/images/home/engineered-for-security.webp" alt="engineered-for-security" className="w-full transition-transform duration-300 hover:scale-105" />
+              <img
+                src="/images/home/engineered-for-security.webp"
+                alt="engineered-for-security"
+                className="w-full transition-transform duration-300 hover:scale-105"
+                loading="lazy"
+              />
             </div>
             <div className="mt-5">
               <div className="text-xl font-bold mb-2">Được thiết kế để bảo mật</div>

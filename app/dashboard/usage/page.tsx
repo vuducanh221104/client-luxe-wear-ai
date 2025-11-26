@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,8 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Responsive
 import { toast } from "sonner";
 import { listAgents } from "@/services/agentService";
 import { getUserAnalytics, getTenantAnalytics, exportAnalytics } from "@/services/analyticsService";
+import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 type DateRange = {
   from: Date | undefined;
@@ -33,6 +35,7 @@ export default function UsagePage() {
   // Chart data
   const [usageHistory, setUsageHistory] = useState<any[]>([]);
   const [creditsPerAgent, setCreditsPerAgent] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   // Load agents
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function UsagePage() {
   // Load analytics data
   const loadData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Determine period params
       let params: any = {};
@@ -91,8 +95,6 @@ export default function UsagePage() {
       const tenantAnalyticsRes = await getTenantAnalytics(params);
       const tenantAnalytics = tenantAnalyticsRes?.data || tenantAnalyticsRes;
 
-      // Transform dailyStats (Record<string, number>) to usageOverTime array
-      // Backend returns: dailyStats: { "2024-01-01": 5, "2024-01-02": 10, ... }
       const dailyStats = tenantAnalytics?.dailyStats || {};
       const usageData = Object.entries(dailyStats)
         .map(([date, count]) => ({
@@ -102,8 +104,6 @@ export default function UsagePage() {
         .sort((a, b) => (a.date < b.date ? -1 : 1)); // Sort by date ascending
       setUsageHistory(usageData);
 
-      // Transform topAgents to creditsPerAgent with agent names
-      // Backend returns: topAgents: [{ agentId: "xxx", count: 5 }, ...]
       const topAgents = tenantAnalytics?.topAgents || [];
       const agentData = topAgents.map((item: any) => {
         const agent = agentsList.find((a: any) => a.id === item.agentId);
@@ -116,7 +116,9 @@ export default function UsagePage() {
 
     } catch (error: any) {
       console.error("Failed to load analytics:", error);
-      toast.error(error?.response?.data?.message || "Failed to load usage data");
+      const msg = error?.response?.data?.message || "Failed to load usage data";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -125,6 +127,11 @@ export default function UsagePage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  const topTenUsageHistory = useMemo(
+    () => usageHistory.slice(0, 10),
+    [usageHistory],
+  );
 
   // Export CSV
   const handleExport = async () => {
@@ -223,6 +230,17 @@ export default function UsagePage() {
         )}
       </div>
 
+      {loading && !usageHistory.length && !creditsPerAgent.length ? (
+        <LoadingSkeleton label="Đang tải dữ liệu sử dụng..." count={2} />
+      ) : error ? (
+        <ErrorState
+          title="Không thể tải dữ liệu usage"
+          description={error}
+          onAction={loadData}
+          actionLabel="Thử tải lại"
+        />
+      ) : (
+        <>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
@@ -344,7 +362,7 @@ export default function UsagePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {usageHistory.slice(0, 10).map((item, idx) => (
+                  {topTenUsageHistory.map((item, idx) => (
                     <tr key={idx} className="border-b">
                       <td className="py-2">{item.date}</td>
                       <td className="py-2 text-right">{item.credits}</td>
@@ -356,6 +374,8 @@ export default function UsagePage() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

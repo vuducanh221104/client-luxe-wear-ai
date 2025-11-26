@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -129,22 +129,50 @@ export default function EmbedChatWidget({
     toast.success("Chat exported");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      // Ctrl/Cmd + Enter: xuống dòng
       e.preventDefault();
-      sendMessage();
+      const target = e.currentTarget;
+      const { selectionStart, selectionEnd, value } = target;
+      const nextValue =
+        value.slice(0, selectionStart ?? value.length) +
+        "\n" +
+        value.slice(selectionEnd ?? value.length);
+      const limited = nextValue.slice(0, MAX_INPUT);
+      setInput(limited);
+      requestAnimationFrame(() => {
+        const pos = (selectionStart ?? 0) + 1;
+        target.selectionStart = target.selectionEnd = pos;
+      });
+      return;
+    }
+
+    if (e.key === "Enter") {
+      // Enter: gửi
+      e.preventDefault();
+      void sendMessage();
     }
   };
 
   return (
-    <div className={`flex flex-col h-full bg-background border rounded-lg shadow-lg ${className}`}>
+    <div
+      className={`flex flex-col h-full rounded-2xl border bg-gradient-to-b from-background to-muted/40 shadow-xl ${className}`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-muted/50">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <h3 className="font-semibold text-sm">{agentName}</h3>
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-background/80">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-xl bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold shadow-sm">
+            AI
+          </div>
+          <div className="flex flex-col">
+            <h3 className="font-semibold text-sm leading-tight">{agentName}</h3>
+            <span className="text-[11px] text-muted-foreground leading-tight">
+              Online • Ready to assist your visitors
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="sm"
@@ -164,7 +192,13 @@ export default function EmbedChatWidget({
             Clear
           </Button>
           {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose} title="Close">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              title="Close"
+              className="hover:bg-primary/10"
+            >
               <X className="h-4 w-4" />
             </Button>
           )}
@@ -172,13 +206,34 @@ export default function EmbedChatWidget({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 px-4 py-3" ref={scrollAreaRef}>
+        <div className="space-y-3">
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-              <div className="text-center space-y-2">
-                <p className="font-medium">Start a conversation</p>
-                <p className="text-xs">Type a message below to begin chatting with {agentName}</p>
+              <div className="text-center space-y-3 max-w-xs">
+                <div className="space-y-1">
+                  <p className="font-medium">Start a conversation</p>
+                  <p className="text-xs">
+                    Ask anything about your products, orders, or support. Press Enter to send, Ctrl+Enter to add a new
+                    line.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {[
+                    "What can you help me with?",
+                    "Recommend a product for me",
+                    "I have an issue with my order",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setInput(suggestion)}
+                      className="rounded-full border bg-background/80 px-3 py-1 text-[11px] font-medium text-foreground hover:bg-muted transition-colors"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -188,16 +243,16 @@ export default function EmbedChatWidget({
                 className={`flex gap-2 items-start group ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1 shadow-sm">
                     <span className="text-xs font-semibold text-primary">AI</span>
                   </div>
                 )}
                 <div className="flex flex-col gap-1 max-w-[80%]">
                   <div
-                    className={`rounded-lg px-4 py-2 ${
+                    className={`rounded-2xl px-4 py-2 text-sm leading-relaxed shadow-sm ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted border"
+                        : "bg-background border border-border/60"
                     }`}
                   >
                     {msg.role === "assistant" ? (
@@ -211,7 +266,7 @@ export default function EmbedChatWidget({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity self-start"
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity self-start text-muted-foreground hover:text-foreground"
                     onClick={() => copyMessage(msg.content)}
                     title="Copy message"
                   >
@@ -237,15 +292,15 @@ export default function EmbedChatWidget({
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t bg-muted/30">
-        <div className="flex gap-2">
+      <div className="p-4 border-t bg-background/80 backdrop-blur-sm">
+        <div className="flex gap-2 items-end">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT))}
             onKeyDown={handleKeyPress}
-            placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+            placeholder="Type your message... (Enter to send, Ctrl+Enter for new line)"
             rows={2}
-            className="resize-none"
+            className="resize-none rounded-2xl border border-border/60 bg-muted/40"
             disabled={loading}
           />
           <Button
@@ -257,11 +312,11 @@ export default function EmbedChatWidget({
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
-        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
           <span>
             {input.length} / {MAX_INPUT} characters
           </span>
-          <span className="text-xs">Press Enter to send</span>
+          <span>Enter để gửi • Ctrl+Enter để xuống dòng</span>
         </div>
       </div>
     </div>

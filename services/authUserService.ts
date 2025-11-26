@@ -112,6 +112,10 @@ export function saveTokens(accessToken?: string, refreshToken?: string) {
   if (typeof window === "undefined") return;
   if (accessToken) localStorage.setItem("access_token", accessToken);
   if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
+  // lightweight auth flag for middleware-based routing
+  if (accessToken) {
+    document.cookie = `auth=1; path=/; max-age=${60 * 60 * 24 * 7}`;
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -123,6 +127,8 @@ export function clearTokens() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
+  // clear auth flag cookie
+  document.cookie = "auth=; path=/; max-age=0";
 }
 
 export async function logout(): Promise<void> {

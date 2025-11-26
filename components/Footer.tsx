@@ -27,8 +27,22 @@ export default function Footer() {
             </div>
 
             <div className="flex items-center gap-6 pt-2">
-              <img src="/images/security/soc-2.webp" alt="SOC2" className="h-14 w-auto" />
-              <img src="/images/security/gdpr.webp" alt="GDPR" className="h-14 w-auto" />
+              <Image
+                src="/images/security/soc-2.webp"
+                alt="SOC2"
+                width={120}
+                height={56}
+                className="h-14 w-auto"
+                sizes="(min-width: 768px) 120px, 96px"
+              />
+              <Image
+                src="/images/security/gdpr.webp"
+                alt="GDPR"
+                width={120}
+                height={56}
+                className="h-14 w-auto"
+                sizes="(min-width: 768px) 120px, 96px"
+              />
             </div>
           </div>
 

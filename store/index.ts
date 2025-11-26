@@ -4,6 +4,7 @@ import storage from "redux-persist/lib/storage";
 import { persistStore, persistReducer } from "redux-persist";
 import authReducer from "./authSlice";
 import tenantReducer from "./tenantSlice";
+import { agentsApi } from "@/services/agentsApi";
 
 const rootPersistConfig = {
   key: "root",
@@ -13,7 +14,8 @@ const rootPersistConfig = {
 
 const rootReducer = combineReducers({
   auth: authReducer,
-  tenant: tenantReducer
+  tenant: tenantReducer,
+  [agentsApi.reducerPath]: agentsApi.reducer,
 });
 
 const persistedReducer = persistReducer(rootPersistConfig, rootReducer);
@@ -23,7 +25,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false // redux-persist non-serializable warnings
-    })
+    }).concat(agentsApi.middleware)
 });
 
 export const persistor = persistStore(store);

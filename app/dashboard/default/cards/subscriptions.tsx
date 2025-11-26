@@ -1,5 +1,6 @@
 "use client";
 
+import React, { memo } from "react";
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,7 +40,7 @@ const data = [
   },
 ];
 
-export default function SubscriptionsCard() {
+function SubscriptionsCard() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -68,3 +69,5 @@ export default function SubscriptionsCard() {
     </Card>
   );
 }
+
+export default memo(SubscriptionsCard);

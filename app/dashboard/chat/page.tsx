@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { chat as chatApi } from "@/services/chatService";
 import { listAgents } from "@/services/agentService";
 import { toast } from "sonner";
 import Markdown from "@/components/markdown";
+import { trackEvent, reportError } from "@/services/observabilityService";
 
 const MAX_INPUT = 4000;
 const MAX_CONTEXT = 2000;
@@ -111,10 +112,24 @@ export default function ChatPage() {
     setLoading(true);
     try {
       const res = await chatApi(agentId, { message: text, context: context || undefined });
-      const reply = res.data?.response || res.data?.message || "(no response)";
+      const reply = (res as any).data?.response || (res as any).data?.message || (res as any).message || "(no response)";
       setMessages((prev) => [...prev, { role: "assistant", content: reply, ts: Date.now() }]);
+    void trackEvent("chat_message_sent", {
+      agentId,
+      hasContext: Boolean(context),
+      length: text.length,
+      page: "dashboard_chat",
+    });
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.message || "Chat failed");
+      if (e?.message === "CHAT_TIMEOUT") {
+        toast.error("Phản hồi mất hơn 20 giây, vui lòng thử lại.");
+      } else {
+        toast.error(e?.response?.data?.message || e?.message || "Chat failed");
+      }
+    void reportError(e, {
+      component: "DashboardChatPage",
+      extra: { agentId },
+    });
     } finally {
       setLoading(false);
     }
@@ -196,6 +211,33 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT))}
             placeholder="Type your message..."
+            onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                // Ctrl+Enter: chủ động chèn xuống dòng
+                e.preventDefault();
+                const target = e.currentTarget;
+                const { selectionStart, selectionEnd, value } = target;
+                const nextValue =
+                  value.slice(0, selectionStart ?? value.length) +
+                  "\n" +
+                  value.slice(selectionEnd ?? value.length);
+                setInput(nextValue.slice(0, MAX_INPUT));
+                // Đưa caret xuống dòng mới
+                requestAnimationFrame(() => {
+                  const pos = (selectionStart ?? 0) + 1;
+                  target.selectionStart = target.selectionEnd = pos;
+                });
+                return;
+              }
+
+              if (e.key === "Enter") {
+                // Enter: gửi tin nhắn
+                e.preventDefault();
+                if (!loading && agentId && input.trim()) {
+                  void send();
+                }
+              }
+            }}
           />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{input.length} / {MAX_INPUT}</span>

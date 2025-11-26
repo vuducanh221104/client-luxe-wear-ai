@@ -33,12 +33,15 @@ import {
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useRequireAuth } from "@/lib/hooks/useRequireAuth";
 
 type NavItem = { href: string; label: string; icon?: React.ElementType };
 
 export default function DashboardLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Bảo vệ khu vực dashboard phía client
+  useRequireAuth();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
