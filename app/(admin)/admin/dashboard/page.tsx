@@ -8,6 +8,7 @@ import { adminListUsers } from '@/services/userService';
 import { adminListAllAgents } from '@/services/agentService';
 import { adminListAllKnowledge } from '@/services/knowledgeService';
 import { adminListAllTenants, adminGetTenantStats } from '@/services/tenantService';
+import { getActivityLogs } from '@/services/adminService';
 import { toast } from 'sonner';
 import { 
   Users, 
@@ -84,23 +85,59 @@ export default function AdminDashboardPage() {
 
       setStats(combinedStats);
 
-      // Get recent activity
-      const activity = [
-        ...users.slice(0, 3).map((u: any) => ({
-          type: 'user',
-          action: 'User registered',
-          name: u.name || u.email,
-          time: u.created_at || u.createdAt,
-        })),
-        ...agents.slice(0, 3).map((a: any) => ({
-          type: 'agent',
-          action: 'Agent created',
-          name: a.name,
-          time: a.created_at || a.createdAt,
-        })),
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
-
-      setRecentActivity(activity);
+      // Get recent activity from API
+      try {
+        const activityRes = await getActivityLogs({ 
+          page: 1, 
+          perPage: 5,
+          dateRange: '7d' // Get last 7 days of activity
+        });
+        
+        const activityData = (activityRes as any)?.data || activityRes;
+        const activityLogs = activityData?.logs || activityData?.activities || activityData || [];
+        
+        // Transform API response to match component format
+        const activity = activityLogs.slice(0, 5).map((log: any) => ({
+          type: log.action?.includes('agent') ? 'agent' : 
+                log.action?.includes('user') ? 'user' : 
+                log.action?.includes('knowledge') ? 'knowledge' : 'system',
+          action: log.action || 'Activity',
+          name: log.actor?.name || log.actor?.email || log.target || 'System',
+          time: log.timestamp || log.created_at || log.createdAt,
+        }));
+        
+        setRecentActivity(activity);
+      } catch (activityError: any) {
+        // Fallback to generating from users/agents if API fails (404, 500, etc.)
+        const isApiUnavailable = 
+          activityError?.response?.status === 404 || 
+          activityError?.response?.status === 500 ||
+          activityError?.status === 404 ||
+          activityError?.message?.includes('Route not found') ||
+          activityError?.message?.includes('404');
+        
+        if (isApiUnavailable) {
+          console.info('Activity logs API not available, using fallback data');
+        } else {
+          console.warn('Failed to load activity logs:', activityError);
+        }
+        const activity = [
+          ...users.slice(0, 3).map((u: any) => ({
+            type: 'user',
+            action: 'User registered',
+            name: u.name || u.email,
+            time: u.created_at || u.createdAt,
+          })),
+          ...agents.slice(0, 3).map((a: any) => ({
+            type: 'agent',
+            action: 'Agent created',
+            name: a.name,
+            time: a.created_at || a.createdAt,
+          })),
+        ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 5);
+        
+        setRecentActivity(activity);
+      }
     } catch (e: any) {
       console.error('Dashboard load error:', e);
       toast.error(e?.response?.data?.message || 'Failed to load dashboard data');
@@ -247,28 +284,38 @@ export default function AdminDashboardPage() {
           ) : recentActivity.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No recent activity</div>
           ) : (
-            recentActivity.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                    item.type === 'user' ? 'bg-blue-100 dark:bg-blue-500/20' : 'bg-purple-100 dark:bg-purple-500/20'
-                  }`}>
-                    {item.type === 'user' ? (
-                      <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    ) : (
-                      <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    )}
+            recentActivity.map((item, idx) => {
+              const getIcon = () => {
+                if (item.type === 'user') return <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />;
+                if (item.type === 'agent') return <Bot className="h-4 w-4 text-purple-600 dark:text-purple-400" />;
+                if (item.type === 'knowledge') return <Database className="h-4 w-4 text-green-600 dark:text-green-400" />;
+                return <Activity className="h-4 w-4 text-gray-600 dark:text-gray-400" />;
+              };
+              
+              const getBgColor = () => {
+                if (item.type === 'user') return 'bg-blue-100 dark:bg-blue-500/20';
+                if (item.type === 'agent') return 'bg-purple-100 dark:bg-purple-500/20';
+                if (item.type === 'knowledge') return 'bg-green-100 dark:bg-green-500/20';
+                return 'bg-gray-100 dark:bg-gray-500/20';
+              };
+              
+              return (
+                <div key={idx} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${getBgColor()}`}>
+                      {getIcon()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{item.action}</p>
+                      <p className="text-xs text-muted-foreground">{item.name}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{item.action}</p>
-                    <p className="text-xs text-muted-foreground">{item.name}</p>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {item.time ? new Date(item.time).toLocaleString() : '-'}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {item.time ? new Date(item.time).toLocaleString() : '-'}
-                </p>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </Card>

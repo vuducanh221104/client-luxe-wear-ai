@@ -8,6 +8,7 @@ import { logout as logoutAction } from "@/store/authSlice";
 import { logout as apiLogout, clearTokens } from "@/services/authUserService";
 import { resetTenantState } from "@/store/tenantSlice";
 import UserAvatar from "@/components/user-avatar";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { 
   Bot, 
   BarChart2, 
@@ -29,6 +30,7 @@ import {
   Sparkles,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -65,6 +67,7 @@ export default function DashboardLayout({
     { href: "/dashboard/knowledge", label: "Knowledge", icon: Database },
     { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
     { href: "/dashboard/usage", label: "Usage", icon: BarChart2 },
+    { href: "/dashboard/tenants", label: "Tenants", icon: Building2 },
   ];
 
   // Settings & Account
@@ -414,7 +417,9 @@ export default function DashboardLayout({
         {/* Content */}
         <main key={currentTenant || 'no-tenant'} className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200">
           <div className="max-w-7xl mx-auto">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>

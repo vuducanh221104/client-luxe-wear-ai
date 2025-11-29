@@ -16,17 +16,28 @@ import { chat } from "@/services/chatService";
 import { trackEvent, reportError } from "@/services/observabilityService";
 import { useTenant } from "@/lib/hooks/useTenant";
 import { usePagination } from "@/lib/hooks/usePagination";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 import { useListAgentsQuery, useSearchAgentsQuery } from "@/services/agentsApi";
 import { AgentCard } from "@/components/agent/AgentCard";
 
 export default function DashboardHomePage() {
   const router = useRouter();
   const { currentTenant } = useTenant();
+  
+  // URL filters
+  const urlFilters = useUrlFilters({
+    q: "",
+    sortBy: "created_at-DESC",
+    page: "1",
+    status: "all",
+  });
+
   const [agents, setAgents] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const { page, pageCount, setPage, setPageSize, setTotal } = usePagination(1, 12);
+  const [searchTerm, setSearchTerm] = useState(urlFilters.getFilter("q"));
+  const { page, pageCount, setPage, setPageSize, setTotal } = usePagination(Number(urlFilters.getFilter("page")) || 1, 12);
   const [perPage, setPerPage] = useState(12);
-  const [sortBy, setSortBy] = useState("created_at-DESC");
+  const [sortBy, setSortBy] = useState(urlFilters.getFilter("sortBy") || "created_at-DESC");
+  const [statusFilter, setStatusFilter] = useState<string>(urlFilters.getFilter("status") || "all");
   const [confirmOpen, setConfirmOpen] = useState<null | { id: string; name: string }>(null);
   const [chatAgentId, setChatAgentId] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
@@ -65,6 +76,17 @@ export default function DashboardHomePage() {
     let agentsData = (source as any).data?.agents || (source as any).agents || [];
     const pagination = (source as any).data?.pagination || (source as any).pagination;
 
+    // Apply status filter (Public/Private)
+    if (statusFilter !== "all") {
+      agentsData = agentsData.filter((agent: any) => {
+        const isPublic = agent.isPublic ?? agent.is_public ?? false;
+        if (statusFilter === "public") return isPublic === true;
+        if (statusFilter === "private") return isPublic === false;
+        return true;
+      });
+    }
+
+    // Apply sorting
     const [field, order] = sortBy.split("-");
     agentsData = [...agentsData].sort((a: any, b: any) => {
       const aName = a.name?.toLowerCase?.() || "";
@@ -78,8 +100,26 @@ export default function DashboardHomePage() {
     });
 
     setAgents(agentsData);
-    setTotal(pagination?.totalCount || agentsData.length);
+    setTotal(agentsData.length); // Use filtered count for pagination
   }, [currentTenant, hasSearch, listData, searchData, sortBy, setTotal]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    urlFilters.setFilter("q", searchTerm);
+  }, [searchTerm, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("sortBy", sortBy);
+  }, [sortBy, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("page", String(page));
+  }, [page, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("status", statusFilter);
+    setPage(1); // Reset to first page when filter changes
+  }, [statusFilter, urlFilters]);
 
   const showTenantEmpty = !currentTenant;
   const loading = isLoadingList || isLoadingSearch || isFetchingList || isFetchingSearch;
@@ -103,13 +143,23 @@ export default function DashboardHomePage() {
         />
       ) : (
         <>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Input
               placeholder="Tìm kiếm agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
+              className="flex-1 min-w-[200px]"
             />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                <SelectItem value="public">Public</SelectItem>
+                <SelectItem value="private">Private</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />

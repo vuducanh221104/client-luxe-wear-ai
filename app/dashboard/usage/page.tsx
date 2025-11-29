@@ -15,6 +15,10 @@ import { listAgents } from "@/services/agentService";
 import { getUserAnalytics, getTenantAnalytics, exportAnalytics } from "@/services/analyticsService";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { retryOnNetworkError } from "@/lib/utils/retry";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 
 type DateRange = {
   from: Date | undefined;
@@ -22,10 +26,21 @@ type DateRange = {
 };
 
 export default function UsagePage() {
+  // URL filters
+  const urlFilters = useUrlFilters({
+    agentId: "all",
+    timeRange: "7d",
+    dateFrom: "",
+    dateTo: "",
+  });
+
   const [agents, setAgents] = useState<any[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("all");
-  const [timeRange, setTimeRange] = useState<string>("7d");
-  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [selectedAgent, setSelectedAgent] = useState<string>(urlFilters.getFilter("agentId"));
+  const [timeRange, setTimeRange] = useState<string>(urlFilters.getFilter("timeRange"));
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: urlFilters.getFilter("dateFrom") ? new Date(urlFilters.getFilter("dateFrom")) : undefined,
+    to: urlFilters.getFilter("dateTo") ? new Date(urlFilters.getFilter("dateTo")) : undefined,
+  });
   const [loading, setLoading] = useState(false);
   
   // Summary data
@@ -71,16 +86,22 @@ export default function UsagePage() {
         params.agentId = selectedAgent;
       }
 
-      // Get summary from user analytics
-      const userAnalyticsRes = await getUserAnalytics(params);
+      // Get summary from user analytics with retry
+      const userAnalyticsRes = await retryOnNetworkError(
+        () => getUserAnalytics(params),
+        2
+      );
       const userAnalytics = userAnalyticsRes?.data || userAnalyticsRes;
       
       // Map backend response to frontend state
       // Backend returns: totalQueries, uniqueAgents
       setCreditsUsed(userAnalytics?.totalQueries || 0);
       
-      // Get number of agents created (from agents list)
-      const agentsRes = await listAgents({ page: 1, pageSize: 100 });
+      // Get number of agents created (from agents list) with retry
+      const agentsRes = await retryOnNetworkError(
+        () => listAgents({ page: 1, pageSize: 100 }),
+        2
+      );
       const rawAgents = agentsRes?.data ?? agentsRes;
       const agentsList = Array.isArray(rawAgents?.agents)
         ? rawAgents.agents
@@ -91,8 +112,11 @@ export default function UsagePage() {
         : [];
       setAgentsUsed(agentsList.length || 0);
 
-      // Get tenant analytics for charts
-      const tenantAnalyticsRes = await getTenantAnalytics(params);
+      // Get tenant analytics for charts with retry
+      const tenantAnalyticsRes = await retryOnNetworkError(
+        () => getTenantAnalytics(params),
+        2
+      );
       const tenantAnalytics = tenantAnalyticsRes?.data || tenantAnalyticsRes;
 
       const dailyStats = tenantAnalytics?.dailyStats || {};
@@ -123,6 +147,22 @@ export default function UsagePage() {
       setLoading(false);
     }
   }, [timeRange, dateRange, selectedAgent]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    urlFilters.setFilter("agentId", selectedAgent);
+  }, [selectedAgent, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("timeRange", timeRange);
+    if (timeRange === "custom" && dateRange.from && dateRange.to) {
+      urlFilters.setFilter("dateFrom", format(dateRange.from, "yyyy-MM-dd"));
+      urlFilters.setFilter("dateTo", format(dateRange.to, "yyyy-MM-dd"));
+    } else {
+      urlFilters.setFilter("dateFrom", "");
+      urlFilters.setFilter("dateTo", "");
+    }
+  }, [timeRange, dateRange, urlFilters]);
 
   useEffect(() => {
     loadData();
@@ -239,6 +279,12 @@ export default function UsagePage() {
           onAction={loadData}
           actionLabel="Thử tải lại"
         />
+      ) : !loading && usageHistory.length === 0 && creditsPerAgent.length === 0 ? (
+        <EmptyState
+          title="No usage data"
+          description="Start using agents to see usage statistics here. Your usage history and charts will appear once you begin chatting with your agents."
+          icon={<Download className="h-12 w-12" />}
+        />
       ) : (
         <>
       {/* Summary Cards */}
@@ -349,7 +395,7 @@ export default function UsagePage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-sm text-muted-foreground">Loading...</div>
+            <TableSkeleton rows={5} cols={2} />
           ) : usageHistory.length === 0 ? (
             <div className="text-sm text-muted-foreground">No daily usage data</div>
           ) : (

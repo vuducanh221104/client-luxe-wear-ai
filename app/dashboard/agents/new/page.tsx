@@ -226,7 +226,12 @@ export default function CreateAgentPage() {
       const res = await createAgent(data);
       if (res.success) {
         toast.success("Agent created successfully");
-        router.push(`/dashboard/agents/${res.data?.id}`);
+        const agentId = res.data?.id || (res as any).data?.data?.id || (res as any).id;
+        if (agentId) {
+          router.push(`/dashboard/chat?agentId=${agentId}`);
+        } else {
+          router.push(`/dashboard`);
+        }
       } else {
         toast.error(res.message || "Failed to create agent");
       }

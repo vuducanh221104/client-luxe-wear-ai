@@ -29,14 +29,43 @@ import {
 } from "@/components/ui/dialog";
 import { Avatar, Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { Search, Filter, X, Columns2, Check, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [allUsers, setAllUsers] = useState<AdminUser[]>([]); // Store all filtered/sorted users
+  const [users, setUsers] = useState<AdminUser[]>([]); // Displayed users (paginated)
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [emailVerifiedFilter, setEmailVerifiedFilter] = useState<string>("all");
+  
+  // Sort state
+  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Column visibility state
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+    avatar: true,
+    name: true,
+    email: true,
+    role: true,
+    status: true,
+    email_verified: true,
+    id: false,
+    actions: true,
+  });
   const [selected, setSelected] = useState<AdminUser | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -48,51 +77,142 @@ export default function AdminUsersPage() {
   const [showResetPwd, setShowResetPwd] = useState<boolean>(false);
   const [resetPwdValue, setResetPwdValue] = useState<string>("");
 
-  const load = useCallback(async () => {
+  // Load data from API
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Load all users (or a large number) to enable client-side filtering/sorting
       const result: AdminUserListResponse = await adminListUsers({
-        page,
-        perPage,
+        page: 1,
+        perPage: 1000, // Load more data to enable client-side operations
         q: q.trim() || undefined,
       });
       const list = Array.isArray(result.users) ? result.users : [];
-      const totalCount = typeof result.total === "number" ? result.total : list.length;
-
-      setUsers(list);
-      setTotal(totalCount);
+      setAllUsers(list);
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } } };
       toast.error(error?.response?.data?.message || "Failed to load users");
+      setAllUsers([]);
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, q]);
+  }, [q]);
 
+  // Process data: filter, sort, and paginate
   useEffect(() => {
-    void load();
-  }, [load]);
+    let list = [...allUsers];
+    
+    // Apply client-side filters
+    if (roleFilter !== "all") {
+      list = list.filter((user) => user.role === roleFilter);
+    }
+    if (statusFilter !== "all") {
+      const isActive = statusFilter === "active";
+      list = list.filter((user) => (user.is_active !== false) === isActive);
+    }
+    if (emailVerifiedFilter !== "all") {
+      const isVerified = emailVerifiedFilter === "verified";
+      list = list.filter((user) => !!user.email_verified === isVerified);
+    }
+    
+    // Apply sorting
+    list.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case "name":
+          aValue = (a.name || "").toLowerCase();
+          bValue = (b.name || "").toLowerCase();
+          break;
+        case "email":
+          aValue = (a.email || "").toLowerCase();
+          bValue = (b.email || "").toLowerCase();
+          break;
+        case "role":
+          aValue = (a.role || "").toLowerCase();
+          bValue = (b.role || "").toLowerCase();
+          break;
+        case "status":
+          aValue = a.is_active !== false ? 1 : 0;
+          bValue = b.is_active !== false ? 1 : 0;
+          break;
+        case "email_verified":
+          aValue = a.email_verified ? 1 : 0;
+          bValue = b.email_verified ? 1 : 0;
+          break;
+        case "last_login":
+          aValue = a.last_login ? new Date(a.last_login).getTime() : 0;
+          bValue = b.last_login ? new Date(b.last_login).getTime() : 0;
+          break;
+        case "created_at":
+        default:
+          aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
+          bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
+          break;
+      }
+      
+      if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+    
+    // Calculate total after filtering
+    const totalCount = list.length;
+    
+    // Apply pagination after sorting and filtering
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    const paginatedList = list.slice(startIndex, endIndex);
 
+    setUsers(paginatedList);
+    setTotal(totalCount);
+  }, [allUsers, roleFilter, statusFilter, emailVerifiedFilter, sortField, sortOrder, page, perPage]);
+
+  // Load data when search query changes (with debounce)
   useEffect(() => {
     const t = setTimeout(() => {
-      setPage(1);
-      void load();
+      setPage(1); // Reset to page 1 when search changes
+      void loadData();
     }, 400);
     return () => clearTimeout(t);
-  }, [q, load]);
+  }, [q, loadData]);
+
+  // Load data on initial mount
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  // Reset to page 1 when filters or sort change
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, statusFilter, emailVerifiedFilter, sortField, sortOrder]);
+
+  const hasActiveFilters = roleFilter !== "all" || statusFilter !== "all" || emailVerifiedFilter !== "all";
+  
+  const clearFilters = () => {
+    setRoleFilter("all");
+    setStatusFilter("all");
+    setEmailVerifiedFilter("all");
+    setPage(1);
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+  };
 
   const onChangeRole = async (id: string, role: string) => {
     try {
       await adminUpdateUser(id, { role });
       toast.success("Role updated");
-      void load();
+      void loadData();
     } catch (e: unknown) {
       const error = e as { response?: { data?: { message?: string } } };
       toast.error(error?.response?.data?.message || "Failed to update role");
     }
   };
 
-  const columns: ColumnsType<AdminUser> = [
+  const allColumns: ColumnsType<AdminUser> = [
     {
       title: "Avatar",
       dataIndex: "avatar_url",
@@ -220,7 +340,7 @@ export default function AdminUsersPage() {
                   setViewOpen(false);
                   setEditOpen(false);
                 }
-                void load();
+                void loadData();
               } catch (e: unknown) {
                 const error = e as { response?: { data?: { message?: string } } };
                 toast.error(error?.response?.data?.message || "Failed to delete user");
@@ -234,17 +354,82 @@ export default function AdminUsersPage() {
     },
   ];
 
+  // Column labels mapping
+  const columnLabels: Record<string, string> = {
+    avatar: "Avatar",
+    name: "Name / Role",
+    email: "Email",
+    role: "Role",
+    status: "Status",
+    email_verified: "Email Verified",
+    id: "ID",
+    actions: "Actions",
+  };
+
+  // Toggle column visibility
+  const toggleColumn = (columnKey: string) => {
+    setVisibleColumns((prev) => ({
+      ...prev,
+      [columnKey]: !prev[columnKey],
+    }));
+  };
+
+  // Filter columns based on visibility
+  const filteredColumns = allColumns.filter((col) => {
+    const key = col.key as string;
+    if (key === "avatar_url") return visibleColumns.avatar;
+    if (key === "name") return visibleColumns.name;
+    if (key === "email") return visibleColumns.email;
+    if (key === "role") return visibleColumns.role;
+    if (key === "is_active") return visibleColumns.status;
+    if (key === "email_verified") return visibleColumns.email_verified;
+    if (key === "id") return visibleColumns.id;
+    if (key === "actions") return visibleColumns.actions;
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Users</h1>
         <div className="flex items-center gap-3">
-          <Input
-            placeholder="Search name or email"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="w-72"
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search name or email"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="w-72 pl-10"
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Columns2 className="h-4 w-4" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {Object.entries(columnLabels).map(([key, label]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleColumn(key);
+                  }}
+                  className="cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    {visibleColumns[key] && <Check className="h-4 w-4" />}
+                    {!visibleColumns[key] && <div className="h-4 w-4" />}
+                    <span>{label}</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Select
             value={String(perPage)}
             onValueChange={(v) => {
@@ -266,21 +451,116 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+          </div>
+          
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="super_admin">Super Admin</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="member">Member</SelectItem>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="guest">Guest</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="banned">Banned</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={emailVerifiedFilter} onValueChange={(v) => setEmailVerifiedFilter(v)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Email Verified" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="verified">Verified</SelectItem>
+              <SelectItem value="not_verified">Not Verified</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              className="gap-2"
+            >
+              <X className="h-4 w-4" />
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Sort Controls */}
+      <Card className="p-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Sort by:</span>
+          </div>
+          
+          <Select value={sortField} onValueChange={(v) => setSortField(v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort field" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Created Date</SelectItem>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="email">Email</SelectItem>
+              <SelectItem value="role">Role</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
+              <SelectItem value="email_verified">Email Verified</SelectItem>
+              <SelectItem value="last_login">Last Login</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleSortOrder}
+            className="gap-2"
+          >
+            {sortOrder === "asc" ? (
+              <>
+                <ArrowUp className="h-4 w-4" />
+                Ascending
+              </>
+            ) : (
+              <>
+                <ArrowDown className="h-4 w-4" />
+                Descending
+              </>
+            )}
+          </Button>
+        </div>
+      </Card>
+
       <Card className="rounded-2xl border overflow-x-auto p-2">
         <Table<AdminUser>
           size="middle"
           rowKey="id"
-          columns={columns}
+          columns={filteredColumns}
           dataSource={users}
           loading={loading}
-          pagination={{
-            current: page,
-            pageSize: perPage,
-            total,
-            showSizeChanger: false,
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises
-            onChange: (p: number) => setPage(p),
-          }}
+          pagination={false}
           scroll={{ x: 1200 }}
         />
       </Card>
@@ -461,7 +741,7 @@ export default function AdminUsersPage() {
                     await adminUpdateUser(selected.id, { is_active: newActive });
                     setEditActive(newActive);
                     toast.success(newActive ? "User unbanned" : "User banned");
-                    void load();
+                    void loadData();
                   } catch (e: unknown) {
                     const error = e as { response?: { data?: { message?: string } } };
                     toast.error(error?.response?.data?.message || "Failed to update status");
@@ -508,7 +788,7 @@ export default function AdminUsersPage() {
                   });
                   toast.success("User updated");
                   setEditOpen(false);
-                  void load();
+                  void loadData();
                 } catch (e: unknown) {
                   const error = e as { response?: { data?: { message?: string } } };
                   toast.error(error?.response?.data?.message || "Failed to update user");

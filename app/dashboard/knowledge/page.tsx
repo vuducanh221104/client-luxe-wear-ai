@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import {
   listKnowledge,
@@ -22,6 +24,9 @@ import {
   uploadFiles,
   getUploadProgress,
 } from "@/services/knowledgeService";
+import { retryOnNetworkError, retryOnServerError } from "@/lib/utils/retry";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
 import { listAgents } from "@/services/agentService";
 import { useSearchParams } from "next/navigation";
 import {
@@ -29,6 +34,7 @@ import {
   Plus,
   Upload,
   FileText,
+  Download,
   Database,
   Trash2,
   Edit,
@@ -45,18 +51,29 @@ import {
 export default function KnowledgePage() {
   const params = useSearchParams();
   const lockedAgentId = params.get("agentId");
-  const [tab, setTab] = useState("list");
+  
+  // URL filters
+  const urlFilters = useUrlFilters({
+    tab: "list",
+    agentId: "all",
+    q: "",
+    page: "1",
+  });
+
+  const [tab, setTab] = useState(urlFilters.getFilter("tab") || "list");
 
   // list state
   const [items, setItems] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(Number(urlFilters.getFilter("page")) || 1);
   const [perPage, setPerPage] = useState(10);
   const [total, setTotal] = useState(0);
-  const [q, setQ] = useState("");
-  const [agentFilter, setAgentFilter] = useState<string>(lockedAgentId ? lockedAgentId : "all");
+  const [q, setQ] = useState(urlFilters.getFilter("q") || "");
+  const [agentFilter, setAgentFilter] = useState<string>(lockedAgentId ? lockedAgentId : urlFilters.getFilter("agentId") || "all");
   const [loading, setLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<null | { id: string; title: string }>(null);
   const [deleting, setDeleting] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   
   // edit state
   const [editingKnowledge, setEditingKnowledge] = useState<any | null>(null);
@@ -92,33 +109,65 @@ export default function KnowledgePage() {
     if (!lockedAgentId) loadAgents();
   }, [lockedAgentId]);
 
+  const [error, setError] = useState<string | null>(null);
+
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       let res;
       const agentParam = lockedAgentId ? lockedAgentId : agentFilter === "all" ? undefined : agentFilter;
       if (q.trim()) {
-        res = await searchKnowledge({ query: q.trim(), limit: perPage, agentId: agentParam });
+        res = await retryOnNetworkError(
+          () => searchKnowledge({ query: q.trim(), limit: perPage, agentId: agentParam }),
+          2
+        );
         const list = res.data?.results || res.results || [];
         setItems(list);
         setTotal(list.length);
       } else {
-        res = await listKnowledge({ page, pageSize: perPage, agentId: agentParam });
+        res = await retryOnNetworkError(
+          () => listKnowledge({ page, pageSize: perPage, agentId: agentParam }),
+          2
+        );
         const list = res.data?.knowledge || res.data?.data?.knowledge || [];
         const pagination = res.data?.pagination || res.data?.data?.pagination;
         setItems(list);
         setTotal(pagination?.totalCount || list.length);
       }
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.message || "Failed to load knowledge");
+      const errorMsg = e?.response?.data?.message || e?.message || "Failed to load knowledge";
+      setError(errorMsg);
+      toast.error(errorMsg);
+      setItems([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
 
+  // Update URL when filters change
+  useEffect(() => {
+    if (!lockedAgentId) {
+      urlFilters.setFilter("agentId", agentFilter);
+    }
+  }, [agentFilter, lockedAgentId, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("q", q);
+  }, [q, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("page", String(page));
+  }, [page, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("tab", tab);
+  }, [tab, urlFilters]);
+
   useEffect(() => {
     load();
-  }, [page, perPage, agentFilter, lockedAgentId]);
+  }, [page, perPage, q, agentFilter, lockedAgentId]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -396,6 +445,72 @@ export default function KnowledgePage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedItems.length === 0) return;
+    if (!confirm(`Delete ${selectedItems.length} item(s)?`)) return;
+    
+    setBulkDeleting(true);
+    try {
+      const deletePromises = selectedItems.map(id => deleteKnowledge(id));
+      const results = await Promise.allSettled(deletePromises);
+      
+      const successCount = results.filter(r => r.status === "fulfilled").length;
+      const failCount = results.length - successCount;
+      
+      if (successCount > 0) {
+        toast.success(`Deleted ${successCount} item(s) successfully`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to delete ${failCount} item(s)`);
+      }
+      
+      setSelectedItems([]);
+      load();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete items");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleExport = () => {
+    const data = items.map(item => ({
+      id: item.id,
+      title: item.title || item.fileName || "Untitled",
+      content: item.content || item.metadata?.content_preview || "",
+      metadata: item.metadata || {},
+      agentId: item.agentId,
+      agentName: item.agent?.name,
+      fileType: item.fileType,
+      createdAt: item.createdAt || item.created_at,
+    }));
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `knowledge-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Exported successfully");
+  };
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedItems(prev => 
+      prev.includes(id) 
+        ? prev.filter(i => i !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.length === items.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(items.map(i => i.id));
+    }
+  };
+
   const stats = useMemo(() => ({
     total: total,
     byAgent: items.filter((k) => k.agentId || k.agent).length,
@@ -515,10 +630,36 @@ export default function KnowledgePage() {
           {/* Knowledge List */}
           <Card>
             <CardHeader>
-              <CardTitle>Knowledge Entries</CardTitle>
-              <CardDescription>
-                {loading ? "Loading..." : `${items.length} of ${total} entries`}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Knowledge Entries</CardTitle>
+                  <CardDescription>
+                    {loading ? "Loading..." : `${items.length} of ${total} entries`}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedItems.length > 0 && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleBulkDelete}
+                      disabled={bulkDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete {selectedItems.length}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                    disabled={items.length === 0}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Export JSON
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
                 {loading ? (
@@ -526,6 +667,13 @@ export default function KnowledgePage() {
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
                   <p className="text-sm text-muted-foreground">Loading knowledge entries...</p>
                 </div>
+                ) : error ? (
+                <ErrorState
+                  title="Failed to load knowledge"
+                  description={error}
+                  onAction={load}
+                  actionLabel="Retry"
+                />
                 ) : items.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
@@ -548,39 +696,73 @@ export default function KnowledgePage() {
                 </div>
                 ) : (
                 <div className="space-y-3">
+                  {items.length > 0 && (
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Checkbox
+                        checked={selectedItems.length === items.length && items.length > 0}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {selectedItems.length > 0 
+                          ? `${selectedItems.length} selected`
+                          : "Select all"}
+                      </span>
+                    </div>
+                  )}
                   {items.map((k) => (
                     <Card key={k.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-start gap-3">
-                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <FileText className="h-5 w-5 text-primary" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-base mb-1 line-clamp-1">
-                                  {k.title || k.fileName || "Untitled"}
-                                </h3>
-                                {k.metadata?.content_preview && (
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                    {k.metadata.content_preview}
-                                  </p>
-                                )}
-                                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                  {k.agent?.name || k.agentId ? (
-                                    <div className="flex items-center gap-1">
-                                      <User className="h-3 w-3" />
-                                      <span>{k.agent?.name || k.agentId}</span>
-                                    </div>
-                                  ) : null}
-                                  {k.fileType && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {k.fileType.toUpperCase()}
-                                    </Badge>
+                          <div className="flex items-start gap-3 flex-1">
+                            <Checkbox
+                              checked={selectedItems.includes(k.id)}
+                              onCheckedChange={() => toggleSelectItem(k.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-start gap-3">
+                                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-base mb-1 line-clamp-1">
+                                    {k.title || k.fileName || "Untitled"}
+                                  </h3>
+                                  {k.metadata?.content_preview && (
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                                      {k.metadata.content_preview}
+                                    </p>
                                   )}
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{new Date(k.createdAt || k.created_at).toLocaleDateString()}</span>
+                                  {(k.content || k.metadata?.content) && (
+                                    <Collapsible>
+                                      <CollapsibleTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground">
+                                          {selectedItems.includes(k.id) ? "Hide preview" : "Show preview"}
+                                        </Button>
+                                      </CollapsibleTrigger>
+                                      <CollapsibleContent className="mt-2">
+                                        <div className="text-sm text-muted-foreground line-clamp-3 p-2 bg-muted/50 rounded">
+                                          {k.content || k.metadata?.content || k.metadata?.content_preview || "No content available"}
+                                        </div>
+                                      </CollapsibleContent>
+                                    </Collapsible>
+                                  )}
+                                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                    {k.agent?.name || k.agentId ? (
+                                      <div className="flex items-center gap-1">
+                                        <User className="h-3 w-3" />
+                                        <span>{k.agent?.name || k.agentId}</span>
+                                      </div>
+                                    ) : null}
+                                    {k.fileType && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {k.fileType.toUpperCase()}
+                                      </Badge>
+                                    )}
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      <span>{new Date(k.createdAt || k.created_at).toLocaleDateString()}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>

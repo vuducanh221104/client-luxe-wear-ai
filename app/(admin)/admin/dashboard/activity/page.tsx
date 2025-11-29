@@ -51,14 +51,35 @@ export default function AdminActivityLogsPage() {
           dateRange: dateRange !== 'all' ? dateRange : undefined,
         });
         
+        // Handle different response structures
         const body = (res as any)?.data || res;
         const payload = body?.data || body;
-        logsList = payload?.logs || payload?.activities || Array.isArray(payload) ? payload : [];
-        const pagination = payload?.pagination || body?.pagination || { total: logsList.length };
-        totalCount = pagination.total || pagination.totalCount || logsList.length;
+        
+        // Try multiple possible field names for logs
+        logsList = payload?.logs || 
+                   payload?.activities || 
+                   payload?.activity_logs ||
+                   (Array.isArray(payload) ? payload : []);
+        
+        // Handle pagination
+        const pagination = payload?.pagination || 
+                          body?.pagination || 
+                          payload?.meta ||
+                          { total: logsList.length };
+        totalCount = pagination.total || 
+                     pagination.totalCount || 
+                     pagination.count ||
+                     logsList.length;
       } catch (apiError: any) {
-        // If API not available, generate logs from users and agents
-        if (apiError?.response?.status === 404 || apiError?.response?.status === 500) {
+        // If API not available (404, 500, or network error), generate logs from users and agents
+        const isApiUnavailable = 
+          apiError?.response?.status === 404 || 
+          apiError?.response?.status === 500 ||
+          apiError?.status === 404 ||
+          apiError?.message?.includes('Route not found') ||
+          apiError?.message?.includes('404');
+        
+        if (isApiUnavailable) {
           const [usersRes, agentsRes] = await Promise.all([
             adminListUsers({ page: 1, perPage: 1000 }).catch(() => ({ data: { users: [] } })),
             adminListAllAgents({ page: 1, perPage: 1000 }).catch(() => ({ data: { agents: [] } })),
@@ -152,6 +173,9 @@ export default function AdminActivityLogsPage() {
           const startIndex = (page - 1) * perPage;
           const endIndex = startIndex + perPage;
           logsList = allLogs.slice(startIndex, endIndex);
+          
+          // Don't show error toast if fallback was successful
+          console.info('Activity logs API not available, using fallback data');
         } else {
           throw apiError;
         }
@@ -161,7 +185,11 @@ export default function AdminActivityLogsPage() {
       setTotal(totalCount);
     } catch (e: any) {
       console.error('Activity logs load error:', e);
-      toast.error(e?.response?.data?.message || 'Failed to load activity logs');
+      // Only show error if it's not a 404 (which we handle with fallback)
+      const is404 = e?.response?.status === 404 || e?.status === 404 || e?.message?.includes('404');
+      if (!is404) {
+        toast.error(e?.response?.data?.message || e?.message || 'Failed to load activity logs');
+      }
       setLogs([]);
       setTotal(0);
     } finally {

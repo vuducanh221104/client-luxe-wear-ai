@@ -17,6 +17,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
 
 interface UsagePoint {
   date: string;
@@ -41,6 +42,7 @@ interface AnalyticsChartsProps {
   conversationsByAgent: CreditsPoint[];
   creditsPerAgent: CreditsPoint[];
   recentQueries: RecentQuery[];
+  loading?: boolean;
 }
 
 export default function AnalyticsCharts({
@@ -48,6 +50,7 @@ export default function AnalyticsCharts({
   conversationsByAgent,
   creditsPerAgent,
   recentQueries,
+  loading = false,
 }: AnalyticsChartsProps) {
   return (
     <>
@@ -144,51 +147,55 @@ export default function AnalyticsCharts({
         <Card>
           <CardContent className="p-4">
             <div className="text-sm font-medium mb-2">Recent queries</div>
-            <div className="rounded-md border">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/50 text-xs">
-                  <tr>
-                    <th className="text-left p-2">Time</th>
-                    <th className="text-left p-2">Agent</th>
-                    <th className="text-left p-2">Query</th>
-                    <th className="text-left p-2">Response</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentQueries.length === 0 ? (
+            {loading ? (
+              <TableSkeleton rows={5} cols={4} />
+            ) : (
+              <div className="rounded-md border">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50 text-xs">
                     <tr>
-                      <td
-                        className="p-2 text-muted-foreground"
-                        colSpan={4}
-                      >
-                        No data
-                      </td>
+                      <th className="text-left p-2">Time</th>
+                      <th className="text-left p-2">Agent</th>
+                      <th className="text-left p-2">Query</th>
+                      <th className="text-left p-2">Response</th>
                     </tr>
-                  ) : (
-                    recentQueries.map((r) => (
-                      <tr key={r.id} className="border-t align-top">
-                        <td className="p-2 whitespace-nowrap">
-                          {new Date(r.timestamp).toLocaleString()}
-                        </td>
-                        <td className="p-2 whitespace-nowrap">{r.agent}</td>
+                  </thead>
+                  <tbody>
+                    {recentQueries.length === 0 ? (
+                      <tr>
                         <td
-                          className="p-2 max-w-[180px] truncate"
-                          title={r.query}
+                          className="p-2 text-muted-foreground"
+                          colSpan={4}
                         >
-                          {r.query}
-                        </td>
-                        <td
-                          className="p-2 max-w-[220px] truncate"
-                          title={r.response}
-                        >
-                          {r.response}
+                          No data
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      recentQueries.map((r) => (
+                        <tr key={r.id} className="border-t align-top">
+                          <td className="p-2 whitespace-nowrap">
+                            {new Date(r.timestamp).toLocaleString()}
+                          </td>
+                          <td className="p-2 whitespace-nowrap">{r.agent}</td>
+                          <td
+                            className="p-2 max-w-[180px] truncate"
+                            title={r.query}
+                          >
+                            {r.query}
+                          </td>
+                          <td
+                            className="p-2 max-w-[220px] truncate"
+                            title={r.response}
+                          >
+                            {r.response}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

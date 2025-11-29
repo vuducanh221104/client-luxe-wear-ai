@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Search,
-  Sun,
-  Moon,
   Settings,
   LogOut,
   LayoutDashboard,
@@ -14,13 +12,10 @@ import {
   Database,
   Building2,
   BarChart3,
-  Activity,
-  AlertTriangle,
   FileText,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout as logoutAction } from "@/store/authSlice";
 import { clearTokens, logout as apiLogout } from "@/services/authUserService";
@@ -52,8 +47,8 @@ const adminRoutes = [
   { title: "Knowledge Management", href: "/admin/dashboard/knowledge", icon: Database },
   { title: "Tenant Management", href: "/admin/dashboard/tenant", icon: Building2 },
   { title: "System Analytics", href: "/admin/dashboard/analytics", icon: BarChart3 },
-  { title: "Activity Logs", href: "/admin/dashboard/activity", icon: Activity },
-  { title: "Error Monitoring", href: "/admin/dashboard/errors", icon: AlertTriangle },
+  // { title: "Activity Logs", href: "/admin/dashboard/activity", icon: Activity },
+  // { title: "Error Monitoring", href: "/admin/dashboard/errors", icon: AlertTriangle },
   { title: "Content Moderation", href: "/admin/dashboard/moderation", icon: FileText },
   { title: "System Settings", href: "/admin/settings", icon: Settings },
 ];
@@ -63,12 +58,10 @@ export default function AdminHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
-  const { theme, setTheme } = useTheme();
   const rawRole = user?.role?.toLowerCase()?.trim();
   const roleLabel =
     rawRole === "super_admin"
@@ -80,10 +73,6 @@ export default function AdminHeader() {
       : rawRole === "member"
       ? "Member"
       : undefined;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
@@ -168,17 +157,6 @@ export default function AdminHeader() {
               <Search className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Search</span>
               <span className="ml-2 rounded-md border px-1.5 py-0.5 text-[10px] text-muted-foreground">⌘ K</span>
-            </button>
-            <button 
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="h-9 w-9 rounded-lg border inline-flex items-center justify-center hover:bg-muted transition-colors" 
-              aria-label="Toggle theme"
-            >
-              {mounted && theme === "dark" ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
             </button>
             <Link 
               href="/admin/settings"

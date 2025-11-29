@@ -8,8 +8,6 @@ import {
   BarChart3, 
   Settings, 
   FileText,
-  AlertTriangle,
-  Activity
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,16 +48,16 @@ export default function AdminSidebar() {
       label: "System Analytics", 
       icon: BarChart3,
     },
-    { 
-      href: "/admin/dashboard/activity", 
-      label: "Activity Logs", 
-      icon: Activity,
-    },
-    { 
-      href: "/admin/dashboard/errors", 
-      label: "Error Monitoring", 
-      icon: AlertTriangle,
-    },
+    // { 
+    //   href: "/admin/dashboard/activity", 
+    //   label: "Activity Logs", 
+    //   icon: Activity,
+    // },
+    // { 
+    //   href: "/admin/dashboard/errors", 
+    //   label: "Error Monitoring", 
+    //   icon: AlertTriangle,
+    // },
     { 
       href: "/admin/dashboard/moderation", 
       label: "Content Moderation", 

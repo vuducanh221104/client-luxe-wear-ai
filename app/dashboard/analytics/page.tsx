@@ -5,13 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { listAgents } from "@/services/agentService";
 import { getAgentAnalytics, getTenantAnalytics, exportAnalytics, getUserAnalytics } from "@/services/analyticsService";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { LoadingSkeleton } from "@/components/shared/LoadingSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { retryOnNetworkError, retryOnServerError } from "@/lib/utils/retry";
+import { useUrlFilters } from "@/lib/hooks/useUrlFilters";
+import { CalendarIcon, BarChart2 } from "lucide-react";
+import { format } from "date-fns";
 import dynamic from "next/dynamic";
+
+type DateRange = {
+  from: Date | undefined;
+  to: Date | undefined;
+};
 
 const AnalyticsCharts = dynamic(
   () => import("@/components/analytics/AnalyticsCharts"),
@@ -26,8 +38,21 @@ const AnalyticsCharts = dynamic(
 export default function AnalyticsDashboardPage() {
   const params = useSearchParams();
   const lockedAgentId = params.get("agentId");
-  const [agentId, setAgentId] = useState<string>(lockedAgentId || "all");
-  const [range, setRange] = useState<string>("7d");
+  
+  // URL filters
+  const urlFilters = useUrlFilters({
+    agentId: "all",
+    range: "7d",
+    dateFrom: "",
+    dateTo: "",
+  });
+  
+  const [agentId, setAgentId] = useState<string>(lockedAgentId || urlFilters.getFilter("agentId"));
+  const [range, setRange] = useState<string>(urlFilters.getFilter("range"));
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: urlFilters.getFilter("dateFrom") ? new Date(urlFilters.getFilter("dateFrom")) : undefined,
+    to: urlFilters.getFilter("dateTo") ? new Date(urlFilters.getFilter("dateTo")) : undefined,
+  });
   const [agents, setAgents] = useState<Array<{ id: string; name: string }>>([]);
 
   const [summary, setSummary] = useState<{ creditsUsed: number; agentsUsed: number }>({ creditsUsed: 0, agentsUsed: 0 });
@@ -37,6 +62,23 @@ export default function AnalyticsDashboardPage() {
   const [recentQueries, setRecentQueries] = useState<Array<{ id: string; agent: string; query: string; response: string; timestamp: string }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update URL when filters change
+  useEffect(() => {
+    if (lockedAgentId) return; // Don't update URL if locked
+    urlFilters.setFilter("agentId", agentId);
+  }, [agentId, lockedAgentId, urlFilters]);
+
+  useEffect(() => {
+    urlFilters.setFilter("range", range);
+    if (range === "custom" && dateRange.from && dateRange.to) {
+      urlFilters.setFilter("dateFrom", format(dateRange.from, "yyyy-MM-dd"));
+      urlFilters.setFilter("dateTo", format(dateRange.to, "yyyy-MM-dd"));
+    } else {
+      urlFilters.setFilter("dateFrom", "");
+      urlFilters.setFilter("dateTo", "");
+    }
+  }, [range, dateRange, urlFilters]);
 
   useEffect(() => {
     const loadAgents = async () => {
@@ -58,15 +100,30 @@ export default function AnalyticsDashboardPage() {
         const a = agents.find((x) => x.id === id);
         return a ? a.name : id;
       };
-      // User summary
-      const user = await getUserAnalytics();
+      // User summary with retry
+      const user = await retryOnNetworkError(
+        () => getUserAnalytics(),
+        2
+      );
       const u = user?.data || user;
       const creditsUsed = Number(u?.totalQueries ?? 0);
       const agentsUsed = Number(u?.uniqueAgents ?? 0);
       setSummary({ creditsUsed, agentsUsed });
 
-      // Tenant analytics for charts
-      const tenant = await getTenantAnalytics({ period: range });
+      // Build params for tenant analytics
+      let tenantParams: any = {};
+      if (range === "custom" && dateRange.from && dateRange.to) {
+        tenantParams.startDate = format(dateRange.from, "yyyy-MM-dd");
+        tenantParams.endDate = format(dateRange.to, "yyyy-MM-dd");
+      } else if (range !== "custom") {
+        tenantParams.period = range;
+      }
+
+      // Tenant analytics for charts with retry
+      const tenant = await retryOnNetworkError(
+        () => getTenantAnalytics(tenantParams),
+        2
+      );
       const t = tenant?.data || tenant;
 
       // usage over time from dailyStats
@@ -85,7 +142,10 @@ export default function AnalyticsDashboardPage() {
 
       const effectiveAgentId = lockedAgentId || (agentId !== "all" ? agentId : "");
       if (effectiveAgentId) {
-        const ag = await getAgentAnalytics(effectiveAgentId);
+        const ag = await retryOnNetworkError(
+          () => getAgentAnalytics(effectiveAgentId),
+          2
+        );
         const a = ag?.data || ag;
         setRecentQueries(a?.recentQueries || []);
         const single = [{ name: nf(effectiveAgentId), value: Number(a?.totalQueries ?? 0) }];
@@ -99,7 +159,7 @@ export default function AnalyticsDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [agentId, range, agents, lockedAgentId]);
+  }, [agentId, range, dateRange, agents, lockedAgentId]);
 
   useEffect(() => {
     loadAnalytics();
@@ -143,6 +203,35 @@ export default function AnalyticsDashboardPage() {
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
+              {range === "custom" && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from && dateRange.to ? (
+                        `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
+                      ) : dateRange.from ? (
+                        format(dateRange.from, "MMM dd, yyyy")
+                      ) : (
+                        "Pick dates"
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      selected={{ from: dateRange.from, to: dateRange.to }}
+                      onSelect={(range) => {
+                        setDateRange({
+                          from: range?.from,
+                          to: range?.to,
+                        });
+                      }}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </>
           )}
           <Button variant="outline" onClick={handleExport}>Export CSV</Button>
@@ -157,6 +246,12 @@ export default function AnalyticsDashboardPage() {
           description={error}
           onAction={loadAnalytics}
           actionLabel="Thử tải lại"
+        />
+      ) : !loading && usageSeries.length === 0 && creditsPerAgent.length === 0 && recentQueries.length === 0 ? (
+        <EmptyState
+          title="No analytics data"
+          description="Start using agents to see analytics here. Your usage statistics and charts will appear once you begin chatting with your agents."
+          icon={<BarChart2 className="h-12 w-12" />}
         />
       ) : (
         <>
@@ -180,6 +275,7 @@ export default function AnalyticsDashboardPage() {
         conversationsByAgent={conversationsByAgent}
         creditsPerAgent={creditsPerAgent}
         recentQueries={recentQueries}
+        loading={loading}
       />
       </>
       )}

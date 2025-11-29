@@ -21,6 +21,7 @@ export const page_routes: PageRoutesType[] = [
         icon: "PieChart"
       },
       { title: "Users", href: "/dashboard/pages/users", icon: "Users" },
+      { title: "Tenants", href: "/dashboard/tenants", icon: "Building" },
       {
         title: "Settings",
         href: "/dashboard/pages/settings",

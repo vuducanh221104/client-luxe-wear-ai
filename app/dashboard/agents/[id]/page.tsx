@@ -16,8 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { getAgent, updateAgent, deleteAgent, regenerateApiKey, togglePublic } from "@/services/agentService";
 import { getAgentAnalytics } from "@/services/analyticsService";
+import { listKnowledge } from "@/services/knowledgeService";
 import EmbedChatWidget from "@/components/dashboard/EmbedChatWidget";
-import { Copy, Check, Info, AlertCircle, ExternalLink, Code2, Globe, FileCode } from "lucide-react";
+import { Copy, Check, Info, AlertCircle, ExternalLink, Code2, Globe, FileCode, Database, BarChart2, Loader2 } from "lucide-react";
+import { retryOnNetworkError } from "@/lib/utils/retry";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import Link from "next/link";
 
 export default function AgentDetailsPage() {
   const params = useParams();
@@ -27,6 +32,7 @@ export default function AgentDetailsPage() {
   const currentTab = (searchParams?.get("tab") || "config") as string;
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -44,15 +50,31 @@ export default function AgentDetailsPage() {
   const [maxTokens, setMaxTokens] = useState<number>(2048);
   const [systemPrompt, setSystemPrompt] = useState<string>("");
   const [instructions, setInstructions] = useState<string>("");
-
   const [analytics, setAnalytics] = useState<any | null>(null);
+
+  // Knowledge tab state
+  const [knowledgeCount, setKnowledgeCount] = useState(0);
+  const [recentKnowledge, setRecentKnowledge] = useState<any[]>([]);
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
+
+  // Analytics tab state
+  const [analyticsSummary, setAnalyticsSummary] = useState({
+    totalQueries: 0,
+    avgResponseTime: 0,
+    successRate: 0,
+  });
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const res = await getAgent(agentId);
+        const res = await retryOnNetworkError(
+          () => getAgent(agentId),
+          2
+        );
         const data = res.data || res;
         setName(data.name || "");
         setDescription(data.description || "");
@@ -69,18 +91,123 @@ export default function AgentDetailsPage() {
           setApiKey(data.apiKey);
         }
       } catch (e: any) {
-        toast.error(e?.response?.data?.message || e?.message || "Failed to load agent");
-        router.push("/dashboard");
+        const errorMsg = e?.response?.data?.message || e?.message || "Failed to load agent";
+        setError(errorMsg);
+        toast.error(errorMsg);
+        // Don't redirect immediately, show error state instead
       } finally {
         setLoading(false);
       }
       try {
-        const a = await getAgentAnalytics(agentId);
+        const a = await retryOnNetworkError(
+          () => getAgentAnalytics(agentId),
+          2
+        );
         setAnalytics(a.data || a);
       } catch {}
     };
     if (agentId) load();
   }, [agentId, router]);
+
+  // Load knowledge when knowledge tab is active
+  useEffect(() => {
+    if (currentTab === "knowledge" && agentId) {
+      setLoadingKnowledge(true);
+      retryOnNetworkError(
+        () => listKnowledge({ agentId, pageSize: 10 }),
+        2
+      )
+        .then((res) => {
+          const list = res.data?.knowledge || res.data?.data?.knowledge || [];
+          setKnowledgeCount(list.length);
+          setRecentKnowledge(list.slice(0, 5));
+        })
+        .catch((e) => {
+          console.error("Failed to load knowledge:", e);
+          setKnowledgeCount(0);
+          setRecentKnowledge([]);
+        })
+        .finally(() => {
+          setLoadingKnowledge(false);
+        });
+    }
+  }, [currentTab, agentId]);
+
+  // Load analytics summary when analytics tab is active
+  useEffect(() => {
+    if (currentTab === "analytics" && agentId) {
+      setLoadingAnalytics(true);
+      retryOnNetworkError(
+        () => getAgentAnalytics(agentId),
+        2
+      )
+        .then((res) => {
+          const data = res.data || res;
+          setAnalyticsSummary({
+            totalQueries: data.totalQueries || 0,
+            avgResponseTime: data.avgResponseTime || 0,
+            successRate: data.successRate || 0,
+          });
+        })
+        .catch((e) => {
+          console.error("Failed to load analytics:", e);
+          setAnalyticsSummary({ totalQueries: 0, avgResponseTime: 0, successRate: 0 });
+        })
+        .finally(() => {
+          setLoadingAnalytics(false);
+        });
+    }
+  }, [currentTab, agentId]);
+
+  // Load knowledge when knowledge tab is active
+  useEffect(() => {
+    if (currentTab === "knowledge" && agentId) {
+      setLoadingKnowledge(true);
+      retryOnNetworkError(
+        () => listKnowledge({ agentId, pageSize: 10 }),
+        2
+      )
+        .then((res) => {
+          const list = res.data?.knowledge || res.data?.data?.knowledge || [];
+          setKnowledgeCount(list.length);
+          setRecentKnowledge(list.slice(0, 5));
+        })
+        .catch((e) => {
+          console.error("Failed to load knowledge:", e);
+          setKnowledgeCount(0);
+          setRecentKnowledge([]);
+        })
+        .finally(() => {
+          setLoadingKnowledge(false);
+        });
+    }
+  }, [currentTab, agentId]);
+
+  // Load analytics summary when analytics tab is active
+  useEffect(() => {
+    if (currentTab === "analytics" && agentId) {
+      setLoadingAnalytics(true);
+      retryOnNetworkError(
+        () => getAgentAnalytics(agentId),
+        2
+      )
+        .then((res) => {
+          const data = res.data || res;
+          setAnalyticsSummary({
+            totalQueries: data.totalQueries || 0,
+            avgResponseTime: data.avgResponseTime || 0,
+            successRate: data.successRate || 0,
+          });
+        })
+        .catch((e) => {
+          console.error("Failed to load analytics:", e);
+          setAnalyticsSummary({ totalQueries: 0, avgResponseTime: 0, successRate: 0 });
+        })
+        .finally(() => {
+          setLoadingAnalytics(false);
+        });
+    }
+  }, [currentTab, agentId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -679,29 +806,155 @@ async function chatWithAgent(message){
 
       {currentTab === "knowledge" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium">Knowledge Base</div>
-                <div className="text-xs text-muted-foreground">Manage documents and files for this agent</div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    Knowledge Base
+                  </CardTitle>
+                  <CardDescription>
+                    {loadingKnowledge ? "Loading..." : `${knowledgeCount} knowledge entries`}
+                  </CardDescription>
+                </div>
+                <Button asChild>
+                  <Link href={`/dashboard/knowledge?agentId=${agentId}`}>
+                    Manage Knowledge
+                  </Link>
+                </Button>
               </div>
-              <Button onClick={() => router.push(`/dashboard/knowledge?agentId=${agentId}`)}>Open Knowledge</Button>
-            </div>
-          </div>
+            </CardHeader>
+            <CardContent>
+              {loadingKnowledge ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : recentKnowledge.length === 0 ? (
+                <EmptyState
+                  title="No knowledge entries"
+                  description="Add knowledge to help your agent answer questions better"
+                  icon={<Database className="h-12 w-12" />}
+                  actionLabel="Add Knowledge"
+                  onAction={() => router.push(`/dashboard/knowledge?agentId=${agentId}`)}
+                />
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-sm font-medium">Recent Knowledge Entries</div>
+                  <div className="space-y-2">
+                    {recentKnowledge.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{item.title || "Untitled"}</div>
+                          {item.content && (
+                            <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {item.content.substring(0, 100)}...
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="ml-2 shrink-0"
+                        >
+                          <Link href={`/dashboard/knowledge?agentId=${agentId}`}>
+                            View
+                          </Link>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  {knowledgeCount > recentKnowledge.length && (
+                    <div className="text-center pt-2">
+                      <Button variant="outline" asChild>
+                        <Link href={`/dashboard/knowledge?agentId=${agentId}`}>
+                          View All {knowledgeCount} Entries
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {currentTab === "analytics" && (
         <div className="space-y-4">
-          <div className="rounded-2xl border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium">Analytics</div>
-                <div className="text-xs text-muted-foreground">Manage Analytics for this agent</div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart2 className="h-5 w-5" />
+                    Analytics Summary
+                  </CardTitle>
+                  <CardDescription>
+                    Overview of agent performance and usage
+                  </CardDescription>
+                </div>
+                <Button asChild>
+                  <Link href={`/dashboard/analytics?agentId=${agentId}`}>
+                    View Full Analytics
+                  </Link>
+                </Button>
               </div>
-              <Button onClick={() => router.push(`/dashboard/analytics?agentId=${agentId}`)}>Open Analytics </Button>
-            </div>
-          </div>
+            </CardHeader>
+            <CardContent>
+              {loadingAnalytics ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : analyticsSummary.totalQueries === 0 ? (
+                <EmptyState
+                  title="No analytics data yet"
+                  description="Start using this agent to see analytics here"
+                  icon={<BarChart2 className="h-12 w-12" />}
+                  actionLabel="Go to Chat"
+                  onAction={() => router.push(`/dashboard/chat?agentId=${agentId}`)}
+                />
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-2xl font-bold">{analyticsSummary.totalQueries.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Total Queries</div>
+                      </CardContent>
+                    </Card>
+                    {analyticsSummary.avgResponseTime > 0 && (
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold">{analyticsSummary.avgResponseTime.toFixed(1)}s</div>
+                          <div className="text-xs text-muted-foreground mt-1">Avg Response Time</div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {analyticsSummary.successRate > 0 && (
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="text-2xl font-bold">{analyticsSummary.successRate.toFixed(1)}%</div>
+                          <div className="text-xs text-muted-foreground mt-1">Success Rate</div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                  <div className="pt-4 border-t">
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href={`/dashboard/analytics?agentId=${agentId}`}>
+                        View Detailed Analytics & Charts
+                      </Link>
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
