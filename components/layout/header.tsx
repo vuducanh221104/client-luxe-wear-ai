@@ -73,10 +73,10 @@ export default function Header() {
   };
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+    <header className="border-b bg-background sticky top-0 z-50">
       <div className="container mx-auto h-14 flex items-center justify-between px-4">
         {/* Left: Logo */}
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity relative z-10">
           <Image
             src="/logoGobal.png"
             alt="Logo"
@@ -84,6 +84,9 @@ export default function Header() {
             height={44}
             className="h-11 w-auto"
             priority
+            quality={100}
+            unoptimized
+            style={{ opacity: 1, filter: 'none' }}
           />
         </Link>
 
