@@ -595,12 +595,16 @@ export default function KnowledgePage() {
                     placeholder="Search knowledge by title, filename, or content..."
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
+                    aria-label="Search knowledge entries"
                   />
                 </div>
           {!lockedAgentId && (
                   <>
               <Select value={agentFilter} onValueChange={setAgentFilter}>
-                      <SelectTrigger className="w-full sm:w-[220px]">
+                      <SelectTrigger 
+                        className="w-full sm:w-[220px]"
+                        aria-label="Filter by agent"
+                      >
                         <Filter className="h-4 w-4 mr-2" />
                         <SelectValue placeholder="All agents" />
                       </SelectTrigger>

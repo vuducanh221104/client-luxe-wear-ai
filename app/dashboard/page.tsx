@@ -149,9 +149,13 @@ export default function DashboardHomePage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1 min-w-[200px]"
+              aria-label="Search agents"
             />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger 
+                className="w-[140px]"
+                aria-label="Filter by status"
+              >
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -161,7 +165,10 @@ export default function DashboardHomePage() {
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger 
+                className="w-[180px]"
+                aria-label="Sort agents"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -215,7 +215,10 @@ export default function UsagePage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger 
+            className="w-[200px]"
+            aria-label="Filter by agent"
+          >
             <SelectValue placeholder="Select agent" />
           </SelectTrigger>
           <SelectContent>
@@ -229,7 +232,10 @@ export default function UsagePage() {
         </Select>
 
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger 
+            className="w-[160px]"
+            aria-label="Select time range"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -243,7 +249,11 @@ export default function UsagePage() {
         {timeRange === "custom" && (
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[260px] justify-start text-left font-normal">
+              <Button 
+                variant="outline" 
+                className="w-[260px] justify-start text-left font-normal"
+                aria-label="Select custom date range"
+              >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange.from ? (
                   dateRange.to ? (

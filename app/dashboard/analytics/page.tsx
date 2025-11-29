@@ -187,7 +187,12 @@ export default function AnalyticsDashboardPage() {
           {!lockedAgentId && (
             <>
               <Select value={agentId} onValueChange={setAgentId}>
-                <SelectTrigger className="w-[220px]"><SelectValue placeholder="All agents" /></SelectTrigger>
+                <SelectTrigger 
+                  className="w-[220px]"
+                  aria-label="Filter by agent"
+                >
+                  <SelectValue placeholder="All agents" />
+                </SelectTrigger>
                 <SelectContent>
                   {agents.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
@@ -195,7 +200,12 @@ export default function AnalyticsDashboardPage() {
                 </SelectContent>
               </Select>
               <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="w-[160px]"><SelectValue placeholder="7d" /></SelectTrigger>
+                <SelectTrigger 
+                  className="w-[160px]"
+                  aria-label="Select time range"
+                >
+                  <SelectValue placeholder="7d" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="today">Today</SelectItem>
                   <SelectItem value="7d">Last 7 days</SelectItem>
@@ -206,7 +216,11 @@ export default function AnalyticsDashboardPage() {
               {range === "custom" && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                    <Button 
+                      variant="outline" 
+                      className="w-[240px] justify-start text-left font-normal"
+                      aria-label="Select custom date range"
+                    >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateRange.from && dateRange.to ? (
                         `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
@@ -234,7 +248,13 @@ export default function AnalyticsDashboardPage() {
               )}
             </>
           )}
-          <Button variant="outline" onClick={handleExport}>Export CSV</Button>
+          <Button 
+            variant="outline" 
+            onClick={handleExport}
+            aria-label="Export analytics data to CSV"
+          >
+            Export CSV
+          </Button>
         </div>
       </div>
 
