@@ -95,6 +95,7 @@ export default function KnowledgePage() {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<number>(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [uploadDetails, setUploadDetails] = useState<Array<{fileName: string; status: string; percentage: number; error?: string}>>([]);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -250,6 +251,14 @@ export default function KnowledgePage() {
             return;
           }
           
+          // Update upload details for UI display
+          setUploadDetails(progressArray.map((p: any) => ({
+            fileName: p.fileName || p.filename || p.name || "Unknown file",
+            status: p.status || "unknown",
+            percentage: p.percentage || 0,
+            error: p.error || p.message || undefined
+          })));
+          
           // Calculate average percentage from all files
           const totalPercentage = progressArray.reduce((sum: number, p: any) => {
             const percent = p.percentage || 0;
@@ -262,12 +271,22 @@ export default function KnowledgePage() {
           
           // Check if all files are completed
           const allCompleted = progressArray.every((p: any) => 
-            p.status === "completed" || (p.percentage || 0) >= 100
+            p.status === "completed" || p.status === "success" || (p.percentage || 0) >= 100
           );
-          const hasError = progressArray.some((p: any) => p.status === "error");
+          const hasError = progressArray.some((p: any) => 
+            p.status === "error" || p.status === "failed" || p.status === "failure"
+          );
           const allProcessing = progressArray.every((p: any) => 
-            p.status === "processing" || p.status === "uploading"
+            p.status === "processing" || p.status === "uploading" || p.status === "pending"
           );
+          
+          // Collect error details for better user feedback
+          const errorFiles = progressArray.filter((p: any) => 
+            p.status === "error" || p.status === "failed" || p.status === "failure"
+          ).map((p: any) => ({
+            fileName: p.fileName || p.filename || "Unknown file",
+            error: p.error || p.message || "Processing failed"
+          }));
           
           // If all completed or progress is 100%, finish
           if (allCompleted || (finalProgress >= 100 && !allProcessing)) {
@@ -278,8 +297,15 @@ export default function KnowledgePage() {
             setUploading(false);
             setProgress(100);
             
-            if (hasError) {
-              toast.warning("Upload completed with some errors");
+            if (hasError && errorFiles.length > 0) {
+              // Show detailed error messages
+              toast.error(
+                `Upload failed: ${errorFiles.length} file(s) could not be processed. ${errorFiles[0].error}`,
+                { duration: 5000 }
+              );
+              console.error("Upload errors:", errorFiles);
+            } else if (hasError) {
+              toast.warning("Upload completed with some errors. Please check the files.");
             } else {
               toast.success("Upload completed successfully");
             }
@@ -289,6 +315,11 @@ export default function KnowledgePage() {
             if (fileInputRef.current) {
               fileInputRef.current.value = "";
             }
+            
+            // Clear upload details after a delay
+            setTimeout(() => {
+              setUploadDetails([]);
+            }, 3000);
             
             // Wait a bit for server to process, then refresh and switch to list tab
             setTimeout(() => {
@@ -312,8 +343,9 @@ export default function KnowledgePage() {
               }
               setUploading(false);
               setProgress(100);
-              toast.success("Upload completed successfully");
+              toast.warning("Upload session ended. Please check if files were processed successfully.");
               setFiles([]);
+              setUploadDetails([]);
               
               // Refresh list after a delay
               setTimeout(() => {
@@ -346,6 +378,7 @@ export default function KnowledgePage() {
       }
       setUploading(false);
       setProgress(0);
+      setUploadDetails([]);
       toast.error(e?.response?.data?.message || e?.message || "Upload failed");
     }
   };
@@ -839,7 +872,7 @@ export default function KnowledgePage() {
               </DialogHeader>
               <div className="py-4">
                 <p className="text-sm text-muted-foreground">
-                  Are you sure you want to delete <span className="font-semibold text-foreground">"{confirmDelete?.title || "this item"}"</span>? This action cannot be undone.
+                  Are you sure you want to delete <span className="font-semibold text-foreground">&quot;{confirmDelete?.title || "this item"}&quot;</span>? This action cannot be undone.
                 </p>
               </div>
               <DialogFooter>
@@ -1180,7 +1213,7 @@ export default function KnowledgePage() {
               {(uploading || progress > 0) && (
                 <Card>
                   <CardContent className="pt-6">
-          <div className="space-y-2">
+          <div className="space-y-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">Upload Progress</span>
                         <span className="text-muted-foreground">{Math.floor(progress)}%</span>
@@ -1191,6 +1224,41 @@ export default function KnowledgePage() {
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Processing files...
                         </p>
+                      )}
+                      
+                      {/* File-by-file progress details */}
+                      {uploadDetails.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground">File Details:</p>
+                          {uploadDetails.map((detail, idx) => (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="truncate flex-1 mr-2">{detail.fileName}</span>
+                                <span className={`text-xs font-medium ${
+                                  detail.status === "completed" || detail.status === "success" 
+                                    ? "text-green-600" 
+                                    : detail.status === "error" || detail.status === "failed" || detail.status === "failure"
+                                    ? "text-red-600"
+                                    : "text-blue-600"
+                                }`}>
+                                  {detail.status === "completed" || detail.status === "success" ? "✓" :
+                                   detail.status === "error" || detail.status === "failed" || detail.status === "failure" ? "✗" :
+                                   detail.status === "processing" || detail.status === "uploading" ? "⟳" : ""}
+                                  {" "}
+                                  {Math.floor(detail.percentage)}%
+                                </span>
+                              </div>
+                              {detail.error && (
+                                <p className="text-xs text-red-600 bg-red-50 dark:bg-red-950/20 p-2 rounded">
+                                  Error: {detail.error}
+                                </p>
+                              )}
+                              {detail.status === "processing" || detail.status === "uploading" ? (
+                                <Progress value={detail.percentage} className="h-1" />
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
                       )}
             </div>
                   </CardContent>
@@ -1211,6 +1279,7 @@ export default function KnowledgePage() {
                   onClick={() => {
                     setFiles([]);
                     setProgress(0);
+                    setUploadDetails([]);
                     if (fileInputRef.current) {
                       fileInputRef.current.value = "";
                     }

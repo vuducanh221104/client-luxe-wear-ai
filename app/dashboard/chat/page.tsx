@@ -615,7 +615,7 @@ export default function ChatPage() {
             <p className="text-sm text-muted-foreground">
               Are you sure you want to delete{" "}
               <span className="font-semibold text-foreground">
-                "{conversations.find(c => c.id === conversationToDelete)?.title || "this conversation"}"
+                &quot;{conversations.find(c => c.id === conversationToDelete)?.title || "this conversation"}&quot;
               </span>?
               <br />
               <span className="text-xs mt-2 block">

@@ -72,6 +72,56 @@
   }
 }
 
+/* Interface Size Scaling */
+:root {
+  --interface-scale: 1;
+}
+
+.interface-small {
+  --interface-scale: 0.875;
+  font-size: calc(1rem * var(--interface-scale));
+  
+  * {
+    font-size: inherit;
+  }
+  
+  button, input, select, textarea {
+    font-size: calc(0.875rem * var(--interface-scale));
+  }
+  
+  h1 { font-size: calc(2.25rem * var(--interface-scale)); }
+  h2 { font-size: calc(1.875rem * var(--interface-scale)); }
+  h3 { font-size: calc(1.5rem * var(--interface-scale)); }
+  h4 { font-size: calc(1.25rem * var(--interface-scale)); }
+  h5 { font-size: calc(1.125rem * var(--interface-scale)); }
+  h6 { font-size: calc(1rem * var(--interface-scale)); }
+}
+
+.interface-medium {
+  --interface-scale: 1;
+  font-size: calc(1rem * var(--interface-scale));
+}
+
+.interface-large {
+  --interface-scale: 1.125;
+  font-size: calc(1rem * var(--interface-scale));
+  
+  * {
+    font-size: inherit;
+  }
+  
+  button, input, select, textarea {
+    font-size: calc(0.875rem * var(--interface-scale));
+  }
+  
+  h1 { font-size: calc(2.25rem * var(--interface-scale)); }
+  h2 { font-size: calc(1.875rem * var(--interface-scale)); }
+  h3 { font-size: calc(1.5rem * var(--interface-scale)); }
+  h4 { font-size: calc(1.25rem * var(--interface-scale)); }
+  h5 { font-size: calc(1.125rem * var(--interface-scale)); }
+  h6 { font-size: calc(1rem * var(--interface-scale)); }
+}
+
 .container{
   padding-left: 100px !important;
   padding-right: 100px !important;
