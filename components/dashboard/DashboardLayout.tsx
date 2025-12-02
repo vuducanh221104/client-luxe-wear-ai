@@ -329,8 +329,8 @@ export default function DashboardLayout({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="hidden md:inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+              <Settings className="h-4 w-4" />
+              <span>Settings</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -351,7 +351,7 @@ export default function DashboardLayout({
                   <Link href="/dashboard/pages/settings" className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
                     <span>General Settings</span>
-                  </Link>
+            </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -435,7 +435,7 @@ export default function DashboardLayout({
       {/* Body with Sidebar */}
       <div className="mx-auto flex">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:block w-64 shrink-0 border-r bg-background/50">
+        <aside className="hidden md:block w-72 shrink-0 border-r bg-background/50">
           <nav className="p-4">
             {renderNavSection()}
           </nav>
