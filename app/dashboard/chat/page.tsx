@@ -52,6 +52,9 @@ export default function ChatPage() {
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string>("");
+  const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
 
@@ -257,8 +260,42 @@ export default function ChatPage() {
     try {
       const res = await chatApi(agentId, { message: text, context: context || undefined });
       const reply = (res as any).data?.response || (res as any).data?.message || (res as any).message || "(no response)";
-      const assistantMsg: Msg = { role: "assistant", content: reply, ts: Date.now() };
-      setMessages((prev) => [...prev, assistantMsg]);
+      
+      // Create placeholder message for streaming
+      const assistantMsg: Msg = { role: "assistant", content: "", ts: Date.now() };
+      let messageIndex: number;
+      setMessages((prev) => {
+        const newMessages = [...prev, assistantMsg];
+        messageIndex = newMessages.length - 1;
+        setStreamingMessageId(messageIndex);
+        return newMessages;
+      });
+      setLoading(false);
+      
+      // Start typing animation
+      let currentIndex = 0;
+      const typeNextChar = () => {
+        if (currentIndex < reply.length) {
+          setStreamingContent(reply.slice(0, currentIndex + 1));
+          currentIndex++;
+          streamingTimeoutRef.current = setTimeout(typeNextChar, 30); // 30ms per character
+        } else {
+          // Animation complete, update the actual message
+          setMessages((prev) => {
+            const updated = [...prev];
+            if (messageIndex !== undefined && updated[messageIndex]) {
+              updated[messageIndex] = {
+                ...updated[messageIndex],
+                content: reply,
+              };
+            }
+            return updated;
+          });
+          setStreamingMessageId(null);
+          setStreamingContent("");
+        }
+      };
+      typeNextChar();
     void trackEvent("chat_message_sent", {
       agentId,
       hasContext: Boolean(context),
@@ -266,6 +303,12 @@ export default function ChatPage() {
       page: "dashboard_chat",
     });
     } catch (e: any) {
+      // Clear streaming state on error
+      if (streamingTimeoutRef.current) {
+        clearTimeout(streamingTimeoutRef.current);
+      }
+      setStreamingMessageId(null);
+      setStreamingContent("");
       if (e?.message === "CHAT_TIMEOUT") {
         toast.error("Phản hồi mất hơn 20 giây, vui lòng thử lại.");
       } else {
@@ -276,9 +319,21 @@ export default function ChatPage() {
       extra: { agentId },
     });
     } finally {
-      setLoading(false);
+      // Don't set loading to false here if streaming is active
+      if (!streamingMessageId) {
+        setLoading(false);
+      }
     }
   };
+
+  // Cleanup streaming timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingTimeoutRef.current) {
+        clearTimeout(streamingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex gap-4 h-[calc(100vh-200px)]">
@@ -462,7 +517,9 @@ export default function ChatPage() {
                       )}>
                         {m.role === "assistant" ? (
                           <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1">
-                            <Markdown>{m.content}</Markdown>
+                            <Markdown>
+                              {streamingMessageId === i ? streamingContent : m.content}
+                            </Markdown>
                           </div>
                         ) : (
                           <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{m.content}</div>

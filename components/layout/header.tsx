@@ -234,10 +234,17 @@ export default function Header() {
               </div>
             </>
           ) : (
-            <>
-              <Link href="/auth/login" className="text-base font-semibold hover:text-foreground/80 transition-colors">Login</Link>
-              <Link href="/dashboard" className="text-base font-semibold hover:text-foreground/80 transition-colors">Dashboard</Link>
-            </>
+            <Link 
+              href="/auth/login"
+              onClick={(e) => {
+                // Prevent any automatic redirects, ensure we go to login page
+                e.preventDefault();
+                router.push("/auth/login");
+              }}
+              className="text-base font-semibold hover:text-foreground/80 transition-colors"
+            >
+              Login / Register
+            </Link>
           )}
         </div>
       </div>

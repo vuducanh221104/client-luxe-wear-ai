@@ -31,7 +31,6 @@ import {
   Menu,
   X,
   Building2,
-  Type,
 } from "lucide-react";
 import TenantSwitcher from "@/components/tenant/TenantSwitcher";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -123,40 +122,8 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const [interfaceSizeDialogOpen, setInterfaceSizeDialogOpen] = useState(false);
-  const [interfaceSize, setInterfaceSize] = useState<"small" | "medium" | "large">("medium");
   const menuRef = useRef<HTMLDivElement | null>(null);
   const sidebarRef = useRef<HTMLDivElement | null>(null);
-  // Apply interface size to document
-  const applyInterfaceSize = (size: "small" | "medium" | "large") => {
-    const root = document.documentElement;
-    root.classList.remove("interface-small", "interface-medium", "interface-large");
-    root.classList.add(`interface-${size}`);
-    
-    // Apply CSS variables for size scaling
-    const sizeMap = {
-      small: "0.875", // 87.5%
-      medium: "1",    // 100%
-      large: "1.125", // 112.5%
-    };
-    
-    root.style.setProperty("--interface-scale", sizeMap[size]);
-  };
-
-  // Load interface size preference from localStorage
-  useEffect(() => {
-    const savedSize = localStorage.getItem("interfaceSize") as "small" | "medium" | "large" | null;
-    const sizeToApply = savedSize || "medium";
-    setInterfaceSize(sizeToApply);
-    applyInterfaceSize(sizeToApply);
-  }, []);
-
-  // Handle size change
-  const handleSizeChange = (size: "small" | "medium" | "large") => {
-    setInterfaceSize(size);
-    localStorage.setItem("interfaceSize", size);
-    applyInterfaceSize(size);
-  };
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -383,14 +350,6 @@ export default function DashboardLayout({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => setInterfaceSizeDialogOpen(true)}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <Type className="h-4 w-4" />
-                  <span>Interface Size</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/pages/settings" className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
@@ -485,14 +444,14 @@ export default function DashboardLayout({
           </nav>
         </aside>
 
-        {/* Content */}
-        <main key={currentTenant || 'no-tenant'} className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200">
-          <div className="max-w-7xl mx-auto">
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </div>
-        </main>
+         {/* Content */}
+         <main key={currentTenant || 'no-tenant'} className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200" style={{ zoom: '1.1' }}>
+           <div className="max-w-7xl mx-auto">
+             <ErrorBoundary>
+               {children}
+             </ErrorBoundary>
+           </div>
+         </main>
       </div>
 
       {/* Logout Confirmation Dialog */}
@@ -537,56 +496,6 @@ export default function DashboardLayout({
         </DialogContent>
       </Dialog>
 
-      {/* Interface Size Dialog */}
-      <Dialog open={interfaceSizeDialogOpen} onOpenChange={setInterfaceSizeDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Type className="h-5 w-5" />
-              Interface Size
-            </DialogTitle>
-            <DialogDescription>
-              Choose your preferred interface size. This will adjust the font size and spacing throughout the application.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-3">
-            {(["small", "medium", "large"] as const).map((size) => (
-              <button
-                key={size}
-                onClick={() => {
-                  handleSizeChange(size);
-                  setInterfaceSizeDialogOpen(false);
-                }}
-                className={`w-full flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
-                  interfaceSize === size
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
-                }`}
-              >
-                <div className="flex flex-col items-start">
-                  <span className="font-medium capitalize">{size}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {size === "small" && "87.5% - Compact view"}
-                    {size === "medium" && "100% - Default size"}
-                    {size === "large" && "112.5% - Larger text"}
-                  </span>
-                </div>
-                {interfaceSize === size && (
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                )}
-              </button>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setInterfaceSizeDialogOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

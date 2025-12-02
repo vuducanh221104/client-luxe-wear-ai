@@ -17,11 +17,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Redirect authenticated user away from auth pages
-  if (isAuthPage && isAuthenticated) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
-  }
+  // Allow access to auth pages even if cookie exists
+  // Let the client-side handle redirect if user is truly authenticated
+  // This allows users to login again or switch accounts
+  // The login page will handle redirecting authenticated users via useRequireAuth or similar hooks
 
   return NextResponse.next();
 }
