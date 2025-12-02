@@ -520,7 +520,7 @@ export default function AgentDetailsPage() {
                   ) : (
                     <pre className="whitespace-pre-wrap break-words">{`<script>
 async function chatWithAgent(message){
-  const res = await fetch('${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/agents/${agentId}/chat',{
+  const res = await fetch('${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/agents/${agentId}/chat',{
     method:'POST',
     headers:{'Content-Type':'application/json','X-API-Key':'YOUR_API_KEY'},
     body: JSON.stringify({ message })
@@ -584,7 +584,7 @@ async function chatWithAgent(message){
             <CardContent>
               <div className="rounded-lg overflow-hidden border bg-muted/30">
                 <iframe
-                  src={`${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}`}
+                  src={`${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}`}
                   title="Agent Chat Widget"
                   className="w-full h-[520px]"
                   allow="microphone"
@@ -630,7 +630,7 @@ async function chatWithAgent(message){
                           onClick={() => {
                             const code = `<div style="position:relative;width:100%;max-width:380px;height:600px;border-radius:12px;overflow:hidden;margin:0 auto;">
   <iframe
-    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
+    src="${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
     style="width:100%;height:100%;border:none;"
     allow="microphone"
     title="AI Chat Assistant"
@@ -653,7 +653,7 @@ async function chatWithAgent(message){
                       <pre className="rounded-md border bg-muted/50 p-4 text-xs overflow-x-auto">
                         <code>{`<div style="position:relative;width:100%;max-width:380px;height:600px;border-radius:12px;overflow:hidden;margin:0 auto;">
   <iframe
-    src="${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
+    src="${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}"
     style="width:100%;height:100%;border:none;"
     allow="microphone"
     title="AI Chat Assistant"
@@ -702,7 +702,7 @@ async function chatWithAgent(message){
     container.id = 'luxewear-chat-widget';
     container.style.cssText = 'position:fixed;bottom:20px;right:20px;width:380px;height:600px;z-index:9999;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
     var iframe = document.createElement('iframe');
-    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
+    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
     iframe.style.cssText = 'width:100%;height:100%;border:none;';
     iframe.setAttribute('allow', 'microphone');
     iframe.setAttribute('title', 'AI Chat Assistant');
@@ -731,7 +731,7 @@ async function chatWithAgent(message){
     container.id = 'luxewear-chat-widget';
     container.style.cssText = 'position:fixed;bottom:20px;right:20px;width:380px;height:600px;z-index:9999;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
     var iframe = document.createElement('iframe');
-    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
+    iframe.src = '${process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com"}/api/public/widget/${agentId}${apiKey ? `?apiKey=${apiKey}` : ""}';
     iframe.style.cssText = 'width:100%;height:100%;border:none;';
     iframe.setAttribute('allow', 'microphone');
     iframe.setAttribute('title', 'AI Chat Assistant');

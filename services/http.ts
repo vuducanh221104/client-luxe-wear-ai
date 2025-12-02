@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from "axios";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_SERVER_URL || "https://server-luxe-wear-ai.onrender.com";
 export const API_PREFIX = "/api";
 
 export interface ApiError {
@@ -104,6 +104,7 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           pendingQueue.push((token) => {
             if (!token) return reject(error);
+            original.headers = original.headers ?? {};
             original.headers.Authorization = `Bearer ${token}`;
             resolve(api(original));
           });
@@ -115,6 +116,7 @@ api.interceptors.response.use(
         const token = await doRefresh();
         pendingQueue.forEach((cb) => cb(token));
         pendingQueue = [];
+        original.headers = original.headers ?? {};
         original.headers.Authorization = `Bearer ${token}`;
         return api(original);
       } catch (e) {
