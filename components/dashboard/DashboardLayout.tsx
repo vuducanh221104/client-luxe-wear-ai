@@ -15,7 +15,6 @@ import {
   UserRoundCog, 
   SlidersHorizontal, 
   Shield, 
-  Book, 
   MessageSquare, 
   ArrowLeft, 
   LogOut, 
@@ -24,10 +23,8 @@ import {
   Code2,
   Database,
   Settings,
-  Users,
   TrendingUp,
   FileText,
-  Sparkles,
   Menu,
   X,
   Building2,
@@ -444,14 +441,17 @@ export default function DashboardLayout({
           </nav>
         </aside>
 
-         {/* Content */}
-         <main key={currentTenant || 'no-tenant'} className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200" style={{ zoom: '1.1' }}>
-           <div className="max-w-7xl mx-auto">
-             <ErrorBoundary>
-               {children}
-             </ErrorBoundary>
-           </div>
-         </main>
+        {/* Content */}
+        <main
+          key={currentTenant || 'no-tenant'}
+          className="flex-1 min-w-0 px-4 md:px-6 lg:px-8 py-6 transition-opacity duration-200 dashboard-main-zoom"
+        >
+          <div className="max-w-7xl mx-auto">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </div>
+        </main>
       </div>
 
       {/* Logout Confirmation Dialog */}

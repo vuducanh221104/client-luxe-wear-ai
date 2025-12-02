@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertTriangle } from "lucide-react";
 import { chat as chatApi } from "@/services/chatService";
@@ -35,7 +33,6 @@ interface Conversation {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
   const search = useSearchParams();
   const initialAgentId = search.get("agentId") || "";
   const lockedAgent = Boolean(initialAgentId);
@@ -145,22 +142,26 @@ export default function ChatPage() {
     const loadAgents = async () => {
       try {
         const res = await listAgents({ page: 1, pageSize: 50 });
-        const data = res.data?.agents || res.data?.data?.agents || [];
-        setAgents(data.map((a: any) => ({ id: a.id, name: a.name })));
+        const data = (res as { data?: { agents?: Array<{ id: string; name: string }>; data?: { agents?: Array<{ id: string; name: string }> } } }).data;
+        const agentsList = data?.agents || data?.data?.agents || [];
+        setAgents(agentsList.map((a) => ({ id: a.id, name: a.name })));
         if (initialAgentId) {
           setAgentId(initialAgentId);
         } else if (!agentId) {
           const last = typeof window !== "undefined" ? localStorage.getItem("last_agent") : null;
-          if (last && data.some((a: any) => a.id === last)) {
+          if (last && agentsList.some((a) => a.id === last)) {
             setAgentId(last);
-          } else if (data[0]) {
-            setAgentId(data[0].id);
+          } else if (agentsList[0]) {
+            setAgentId(agentsList[0].id);
           }
         }
-      } catch (e: any) {
-        toast.error(e?.response?.data?.message || e?.message || "Failed to load agents");
+      } catch (e) {
+        const err = e as { response?: { data?: { message?: string } }; message?: string };
+        toast.error(err.response?.data?.message || err.message || "Failed to load agents");
       }
     };
+    // intentionally ignore deps to only run on first mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     loadAgents();
   }, []);
 
@@ -202,6 +203,7 @@ export default function ChatPage() {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, agentId, currentConversationId]);
 
   useEffect(() => {
@@ -259,7 +261,11 @@ export default function ChatPage() {
     setLoading(true);
     try {
       const res = await chatApi(agentId, { message: text, context: context || undefined });
-      const reply = (res as any).data?.response || (res as any).data?.message || (res as any).message || "(no response)";
+      const reply =
+        (res as { data?: { response?: string; message?: string }; message?: string }).data?.response ||
+        (res as { data?: { response?: string; message?: string }; message?: string }).data?.message ||
+        (res as { data?: { response?: string; message?: string }; message?: string }).message ||
+        "(no response)";
       
       // Create placeholder message for streaming
       const assistantMsg: Msg = { role: "assistant", content: "", ts: Date.now() };
@@ -302,19 +308,20 @@ export default function ChatPage() {
       length: text.length,
       page: "dashboard_chat",
     });
-    } catch (e: any) {
+    } catch (e) {
+      const err = e as { message?: string; response?: { data?: { message?: string } } };
       // Clear streaming state on error
       if (streamingTimeoutRef.current) {
         clearTimeout(streamingTimeoutRef.current);
       }
       setStreamingMessageId(null);
       setStreamingContent("");
-      if (e?.message === "CHAT_TIMEOUT") {
+      if (err?.message === "CHAT_TIMEOUT") {
         toast.error("Phản hồi mất hơn 20 giây, vui lòng thử lại.");
       } else {
-        toast.error(e?.response?.data?.message || e?.message || "Chat failed");
+        toast.error(err.response?.data?.message || err.message || "Chat failed");
       }
-    void reportError(e, {
+    void reportError(err, {
       component: "DashboardChatPage",
       extra: { agentId },
     });
@@ -516,11 +523,16 @@ export default function ChatPage() {
                           : "bg-background border rounded-bl-sm"
                       )}>
                         {m.role === "assistant" ? (
-                          <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1">
-                            <Markdown>
-                              {streamingMessageId === i ? streamingContent : m.content}
-                            </Markdown>
-                          </div>
+                          streamingMessageId === i ? (
+                            // Đang streaming: hiển thị plain text để tránh parse Markdown liên tục
+                            <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                              {streamingContent}
+                            </div>
+                          ) : (
+                            <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:mt-2 prose-headings:mb-1 prose-p:my-1 prose-ul:my-1 prose-ol:my-1">
+                              <Markdown>{m.content}</Markdown>
+                            </div>
+                          )
                         ) : (
                           <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{m.content}</div>
                         )}
@@ -556,7 +568,7 @@ export default function ChatPage() {
               })}
               
               {/* Typing Indicator */}
-              {loading && (
+              {loading && streamingMessageId === null && (
                 <div className="flex gap-4 animate-in fade-in">
                   <Avatar className="h-9 w-9 shrink-0 border-2 bg-muted border-muted-foreground/20">
                     <AvatarFallback className="bg-muted">
